@@ -32,6 +32,14 @@ Known replay caveat (documented risk): the snapshot may end mid-turn
 (pending tool call); if the provider rejects the resumed conversation the
 child exits with reason=error and is excluded-with-report (handling rule 2).
 
+AMENDMENT 2026-08-31 (post-smoke): replay mechanism validated live on a
+clean batch-2 spec — the forked session carried the donor transcript
+byte-identical (only session id / cwd / parentSession / timestamp rewritten),
+RESUME_PROMPT was accepted, the child ran to budget exhaustion. The smoke run
+is parked under results/kvc/_validation/ and is NOT a registered child.
+Mid-turn risk did not arise on the specs collected so far (snapshots ended at
+toolResult boundaries).
+
 ## Frozen constants
 
 | constant | value | where |

@@ -47,10 +47,24 @@ V_PROBE_BUDGET_SECONDS = 120.0
 I_PROBE_BUDGET_SECONDS = 300.0
 
 GOLD_EDIT_SURFACE_HINTS = {
-    # task_id -> paths a correct diagnosis should name (offline scoring key)
+    # task_id -> source paths a correct diagnosis should name (offline scoring
+    # key). Derived offline from the gold diffs (gold^..gold) in the local Pi
+    # clone; CHANGELOG and test files excluded — the surface is the source.
     "pi-retry-attempt-timeout": [
         "packages/coding-agent/src/core/remote-catalog-provider.ts",
         "packages/coding-agent/src/utils/management-http.ts",
+    ],
+    "pi-find-root-relativization": [
+        "packages/coding-agent/src/core/tools/find.ts",
+    ],
+    "pi-thinking-toggle-preserves-bash-output": [
+        "packages/coding-agent/src/modes/interactive/interactive-mode.ts",
+    ],
+    "pi-post-tool-compaction-order": [
+        "packages/agent/src/agent-loop.ts",
+        "packages/agent/src/types.ts",
+        "packages/coding-agent/src/core/agent-session.ts",
+        "packages/coding-agent/src/modes/interactive/interactive-mode.ts",
     ],
 }
 
