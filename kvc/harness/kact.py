@@ -240,12 +240,20 @@ class KacController:
             if card is None:
                 return
             steer_text = format_card_steer(key, card, trigger)
-            accepted = runner.steer(steer_text)
+            if runner._kill_requested.is_set():
+                # Late trigger: the probe outlived the actor's budget. The
+                # card is recorded for analysis but cannot be injected.
+                accepted = False
+                note = "actor terminated before injection"
+            else:
+                accepted = runner.steer(steer_text)
+                note = ""
             entry = {
                 "key": key,
                 "trigger": trigger,
                 "card": card,
                 "accepted": accepted,
+                "note": note,
                 "injected_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             }
             self._cards.append(entry)

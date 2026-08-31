@@ -378,8 +378,13 @@ class KvcRunner:
                     "_mono": round(time.monotonic() - self.gps.start_monotonic, 3),
                 }
             with self._record_lock:
-                self._events_file.write(json.dumps(frame, ensure_ascii=False) + "\n")
-                self._events_file.flush()
+                try:
+                    self._events_file.write(json.dumps(frame, ensure_ascii=False) + "\n")
+                    self._events_file.flush()
+                except ValueError:
+                    # Teardown race: finish() closed the events file while a
+                    # probe thread was still reporting. Drop, never crash.
+                    pass
 
     def send_command(self, command: dict[str, Any], timeout: float = 30.0) -> dict[str, Any] | None:
         proc = self._proc
@@ -393,7 +398,8 @@ class KvcRunner:
         try:
             proc.stdin.write(json.dumps({**command, "id": rid}) + "\n")
             proc.stdin.flush()
-        except (BrokenPipeError, OSError):
+        except (BrokenPipeError, OSError, ValueError):
+            # ValueError: stdin already closed during teardown.
             return None
         if not event.wait(timeout):
             return None

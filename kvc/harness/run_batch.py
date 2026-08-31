@@ -39,11 +39,11 @@ CAL_ROOT = KVC_ROOT / ".cache" / "calibration"
 
 MAX_CAL = 2
 # With the V layer actually running tests, a native run's process tree peaks
-# near 2.1 GB (overlay + vitest). User-granted headroom (2026-08-31): memory
-# and CPU observed under control, more concurrency allowed -> three actor
-# runs at once under a 7.5 GB gate (14 cores / 36 GB machine).
-MAX_NATIVE = 3
-RSS_BUDGET_MB = 7500
+# near 2.1 GB (overlay + vitest). User-granted headroom (2026-08-31 evening):
+# other heavy processes closed on the machine -> four actor runs at once
+# under a 10 GB gate (14 cores / 36 GB machine).
+MAX_NATIVE = 4
+RSS_BUDGET_MB = 10000
 STAGGER_SECONDS = 25.0
 CAL_RSS_ESTIMATE_MB = 900
 NATIVE_RSS_ESTIMATE_MB = 2100
