@@ -32,6 +32,13 @@ Known replay caveat (documented risk): the snapshot may end mid-turn
 (pending tool call); if the provider rejects the resumed conversation the
 child exits with reason=error and is excluded-with-report (handling rule 2).
 
+AMENDMENT 2026-08-31 (incident): the first quarantine of a gold-tier spec was
+placed INSIDE the fork-spec glob root, so run_batch briefly spawned one child
+from it before detection. Batch killed, spec relocated to
+results/_quarantine/ (outside the root), partial child deleted (no report).
+Quarantine rule now: move specs OUTSIDE results/kvc entirely; fork_stats
+additionally quarantines by donor audit tier as defense in depth.
+
 AMENDMENT 2026-08-31 (post-smoke): replay mechanism validated live on a
 clean batch-2 spec — the forked session carried the donor transcript
 byte-identical (only session id / cwd / parentSession / timestamp rewritten),
