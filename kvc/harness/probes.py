@@ -42,11 +42,13 @@ from typing import Any
 
 from kvc.harness.kvc_run import KvcRunner, RunConfig, last_assistant_text
 
-# 2026-08-31 amendment (R4): first D probes on the large-file tasks produced
-# zero assistant text in 120s (budget exhausted mid-read). Raised to 240s for
-# D/V; the 120s value remains frozen for KAC checkpoint cards (kact.run_probe),
-# which answer from bounded inputs, not full-tree reads.
-D_PROBE_BUDGET_SECONDS = 240.0
+# 2026-08-31 amendments (R4): first D probes on the large-file tasks produced
+# zero assistant text in 120s; a 240s rerun still burned the whole budget on
+# reads (133 files, no answer). 360s + a complete file index in the prompt +
+# a hard five-file read cap. The 120s value remains frozen for KAC checkpoint
+# cards (kact.run_probe), which answer from bounded inputs, not full-tree
+# reads.
+D_PROBE_BUDGET_SECONDS = 360.0
 V_PROBE_BUDGET_SECONDS = 240.0
 I_PROBE_BUDGET_SECONDS = 300.0
 
@@ -74,13 +76,18 @@ GOLD_EDIT_SURFACE_HINTS = {
 
 _D_TEMPLATE = """You are a fresh-context diagnosis probe. You have no memory of any
 working session. You see only the task and one source tree state. The full
-source tree is your working directory; you may read files from it, but your
-time budget is small — read at most a few files, then answer. Do not ask
+source tree is your working directory; you may read AT MOST FIVE files from
+it, then you MUST answer — the file index below is often sufficient on its
+own, and reading more than five files is a protocol violation. Do not ask
 questions; answer from evidence only.
 
 # Task (verbatim)
 
 {task_prompt}
+
+# Complete source file index of this tree
+
+{file_index}
 
 # Files changed in this state vs the original base
 
@@ -419,8 +426,16 @@ def main(argv: list[str] | None = None) -> int:
             probe_dir = probe_root / f"{cp}-{kind}"
             probe_dir.mkdir(parents=True, exist_ok=True)
             if kind == "D":
+                listing = _git(tree, "ls-files") or "\n".join(
+                    str(p.relative_to(tree)) for p in sorted(tree.rglob("*")) if p.is_file()
+                )
+                lines = listing.splitlines()
+                file_index = "\n".join(lines[:4000])
+                if len(lines) > 4000:
+                    file_index += f"\n… ({len(lines) - 4000} more files elided)"
                 prompt = _D_TEMPLATE.format(
                     task_prompt=task["prompt"],
+                    file_index=file_index,
                     changes="\n".join(f"  - {p}" for p in changes) or "(none: base state)",
                     observations=_observations(task, traj),
                 )
