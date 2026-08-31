@@ -199,9 +199,17 @@ def permutation_test(blocks: dict[tuple, list[dict]]) -> dict:
         "permutation_space": space,
         "method": method,
         "p_value": p,
+        "p_value_note": (
+            "descriptive, NON-decisional: the pre-registered 2*2^-B block "
+            "floor (p_min_exact_floor) alone governs reject/estimate calls "
+            "(causal-design review 2026-08-31; DESIGN-FORK amendment)"
+        ),
         "p_min_exact_floor": p_min,
         "can_reject_alpha_05": p_min <= ALPHA,
         "stat_ci_95": ci,
+        # Rescale the statistic CI to the mean-paired-difference scale:
+        # statistic = sum(±outcome) = 2 * sum(block diffs), B informative blocks.
+        "shift_ci_95": (ci[0] / (2 * len(informative)), ci[1] / (2 * len(informative))),
     }
 
 
@@ -220,6 +228,64 @@ def hodges_lehmann(blocks: dict[tuple, list[dict]]) -> dict:
     median = diffs[len(diffs) // 2] if len(diffs) % 2 else (
         diffs[len(diffs) // 2 - 1] + diffs[len(diffs) // 2]) / 2
     return {"blocks": len(diffs), "shift": median, "block_diffs": diffs}
+
+
+def _median(values: list[float]) -> float:
+    values = sorted(values)
+    n = len(values)
+    return values[n // 2] if n % 2 else (values[n // 2 - 1] + values[n // 2]) / 2
+
+
+def donor_level_hl(rows: list[dict]) -> dict:
+    """Donor-pooled HL shift + leave-one-donor-out sensitivity.
+
+    b4-style donors contribute multiple blocks; pooling each donor's children
+    across its blocks weights donors equally. LODO over ≤8 donors is reported
+    as a table, never bootstrapped (causal-design review 2026-08-31).
+    """
+    donors: dict[str, list[dict]] = {}
+    for r in rows:
+        donors.setdefault(r["donor_run_id"], []).append(r)
+    diffs: dict[str, float] = {}
+    for donor, drows in donors.items():
+        kac = [int(r["final_pass"]) for r in drows if r["analysis_arm"] == "kac"]
+        none = [int(r["final_pass"]) for r in drows if r["analysis_arm"] == "none"]
+        if kac and none:
+            diffs[donor] = sum(kac) / len(kac) - sum(none) / len(none)
+    if not diffs:
+        return {"donors": 0, "note": "no donor has both arms"}
+    values = list(diffs.values())
+    hl_d = _median(values)
+    lodo = {}
+    for donor in diffs:
+        rest = [v for d, v in diffs.items() if d != donor]
+        lodo[donor] = _median(rest) if rest else None
+    sign_all = all(
+        (v is None) or ((v >= 0) == (hl_d >= 0)) for v in lodo.values()
+    )
+    return {
+        "donors": len(diffs),
+        "hl_donor_pooled": hl_d,
+        "donor_diffs": diffs,
+        "leave_one_donor_out": lodo,
+        "lodo_sign_stable": sign_all,
+    }
+
+
+def t2_fidelity(rows: list[dict]) -> dict:
+    """Replay-fidelity calibration: none-arm children of T2 blocks restart
+    from a tree that ALREADY passed validation, so they should pass again.
+    ≤half passing is a replay-fidelity alarm qualifying all other results."""
+    none_t2 = [
+        r for r in rows
+        if r["analysis_arm"] == "none" and str(r.get("trigger", "")).startswith("T2")
+    ]
+    passes = sum(1 for r in none_t2 if r["final_pass"])
+    return {
+        "children": len(none_t2),
+        "passes": passes,
+        "alarm": bool(none_t2) and passes <= len(none_t2) / 2,
+    }
 
 
 def arm_summary(rows: list[dict], arm: str) -> dict:
@@ -244,6 +310,17 @@ def analyze_stratum(rows: list[dict], label: str) -> dict:
         "arms": {arm: arm_summary(rows, arm) for arm in ("kac", "sham", "none")},
         "test_kac_vs_none": permutation_test(blocks),
         "hodges_lehmann": hodges_lehmann(blocks),
+        "donor_level_hl": donor_level_hl(rows),
+        "t2_fidelity": t2_fidelity(rows),
+        "block_diffs_by_trigger": {
+            f"{donor}/{key}": {
+                "trigger": brows[0].get("trigger"),
+                "kac": [int(r["final_pass"]) for r in brows if r["analysis_arm"] == "kac"],
+                "none": [int(r["final_pass"]) for r in brows if r["analysis_arm"] == "none"],
+                "sham": [int(r["final_pass"]) for r in brows if r["analysis_arm"] == "sham"],
+            }
+            for (donor, key), brows in sorted(blocks.items())
+        },
     }
 
 
@@ -334,13 +411,32 @@ def main() -> int:
                 f" (p_min floor {test['p_min_exact_floor']:.3f} > 0.05: "
                 "estimation only, rejection impossible at this n)")
             print(f"\nkac vs none: statistic {test['observed_statistic']}, "
-                  f"p={test['p_value']:.4f} via {test['method']}, "
+                  f"enumeration p={test['p_value']:.4f} [descriptive, "
+                  f"NON-decisional] via {test['method']}, "
                   f"{test['informative_blocks']}/{test['total_blocks']} "
                   f"informative blocks{verdict}")
+            lo, hi = test["shift_ci_95"]
+            print(f"mean paired difference 95% CI (rescaled): [{lo:+.2f}, {hi:+.2f}]")
             hl = stratum["hodges_lehmann"]
             if "shift" in hl:
-                print(f"Hodges-Lehmann shift {hl['shift']:+.2f} over "
+                print(f"Hodges-Lehmann shift (block-level) {hl['shift']:+.2f} over "
                       f"{hl['blocks']} blocks; block diffs {hl['block_diffs']}")
+            dhl = stratum["donor_level_hl"]
+            if "hl_donor_pooled" in dhl:
+                print(f"HL donor-pooled {dhl['hl_donor_pooled']:+.2f} over "
+                      f"{dhl['donors']} donors; donor diffs "
+                      f"{ {k: round(v, 2) for k, v in dhl['donor_diffs'].items()} }")
+                print(f"LODO: { {k: (None if v is None else round(v, 2)) for k, v in dhl['leave_one_donor_out'].items()} } "
+                      f"(sign-stable: {dhl['lodo_sign_stable']})")
+            fid = stratum["t2_fidelity"]
+            if fid["children"]:
+                flag = " — REPLAY-FIDELITY ALARM" if fid["alarm"] else ""
+                print(f"T2 fidelity (none-arm revalidating an already-passing "
+                      f"tree): {fid['passes']}/{fid['children']} pass{flag}")
+            print("\nper-block outcomes (kac / none / sham):")
+            for blk, vals in stratum["block_diffs_by_trigger"].items():
+                print(f"- {blk} ({vals['trigger']}): kac={vals['kac']} "
+                      f"none={vals['none']} sham={vals['sham']}")
         else:
             print(f"\nkac vs none: {test['note']}")
     if nocard:

@@ -32,6 +32,23 @@ Known replay caveat (documented risk): the snapshot may end mid-turn
 (pending tool call); if the provider rejects the resumed conversation the
 child exits with reason=error and is excluded-with-report (handling rule 2).
 
+AMENDMENT 2026-08-31 (analysis, pre-data): adopted causal-design block review
+(kvc/analysis/notes/causal-block-review.md): fork_stats now reports donor-level
+HL with leave-one-donor-out sensitivity, permutation CI rescaled to the
+mean-paired-difference scale, the child-level enumeration p labeled
+NON-decisional (the pre-registered 2*2^-B block floor alone governs
+reject/estimate calls), and a T2 none-arm fidelity alarm (<=half of the
+none-arm children of T2 blocks re-passing = replay-fidelity alarm). Decision
+rule recorded: NO extra donor batch tonight; a future batch targets >=8
+informative blocks from >=6 distinct donors, pre-committed in writing.
+
+AMENDMENT 2026-08-31 (probe template fix, pre-data): card probes with tools=()
+were observed role-playing tool calls instead of answering (3/4 outputs
+unparseable). kac_checkpoint.md gains an explicit "NO tools, NO file access,
+answer from the given state immediately" sentence. Defect fix, not tuning;
+children batch round3-children-3 killed and relaunched as round3-children-4
+so all children are generated under the identical fixed template.
+
 AMENDMENT 2026-08-31 (incident): the first quarantine of a gold-tier spec was
 placed INSIDE the fork-spec glob root, so run_batch briefly spawned one child
 from it before detection. Batch killed, spec relocated to
