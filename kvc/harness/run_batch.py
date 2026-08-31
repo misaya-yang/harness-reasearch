@@ -169,6 +169,31 @@ def build_jobs(args: argparse.Namespace) -> list[Job]:
                         rss_estimate_mb=NATIVE_RSS_ESTIMATE_MB,
                     )
                 )
+    if args.donor:
+        for task_id in [t.strip() for t in args.donor.split(",") if t.strip()]:
+            for i in range(1, args.reps + 1):
+                run_id = f"{task_id}-donor-r{i}-{stamp}"
+                jobs.append(
+                    Job(
+                        kind="donor",
+                        name=f"donor:{run_id}",
+                        argv=[
+                            sys.executable,
+                            "-m",
+                            "kvc.harness.run_fork_donor",
+                            "--task",
+                            task_id,
+                            "--suite",
+                            args.suite,
+                            "--run-id",
+                            run_id,
+                            "--budget",
+                            str(args.budget),
+                        ],
+                        watchdog_seconds=NATIVE_WATCHDOG_SECONDS,
+                        rss_estimate_mb=NATIVE_RSS_ESTIMATE_MB,
+                    )
+                )
     if args.kac:
         for task_id in [t.strip() for t in args.kac.split(",") if t.strip()]:
             for i in range(1, args.reps + 1):
@@ -258,8 +283,8 @@ def collect(job: Job) -> None:
         tail = job.log_path.read_text(encoding="utf-8", errors="replace")[-1500:]
     except OSError:
         pass
-    if job.kind in ("native", "kac", "fork"):
-        # run_native/run_kac persist the full report; run_id is the job name suffix
+    if job.kind in ("native", "kac", "fork", "donor"):
+        # actor runners persist the full report; run_id is the job name suffix
         run_id = job.name.split(":", 1)[1]
         report_path = RESULTS_ROOT / run_id / "report.json"
         if report_path.exists():
@@ -296,6 +321,7 @@ def main() -> int:
     parser.add_argument("--suite", default="v3")
     parser.add_argument("--calibrate-uncalibrated", action="store_true")
     parser.add_argument("--native", default=None, help="comma-separated task ids for native replicates")
+    parser.add_argument("--donor", default=None, help="comma-separated task ids for fork-donor runs")
     parser.add_argument("--kac", default=None, help="comma-separated task ids for KAC-arm replicates")
     parser.add_argument("--fork-specs", default=None, help="root dir scanned for fork-spec.json (trigger-time fork children)")
     parser.add_argument("--fork-arms", default="none,sham,kac", help="comma-separated fork arms")
@@ -309,7 +335,7 @@ def main() -> int:
     if not jobs:
         print("nothing to do (all tasks already calibrated, no --native/--kac given)")
         return 0
-    if any(job.kind in ("native", "kac", "fork") for job in jobs) and not os.environ.get(KEY_ENV_NAME):
+    if any(job.kind in ("native", "kac", "fork", "donor") for job in jobs) and not os.environ.get(KEY_ENV_NAME):
         print(f"FAIL: actor jobs need {KEY_ENV_NAME} in the environment", file=sys.stderr)
         return 2
 
@@ -341,19 +367,19 @@ def main() -> int:
                 elapsed = time.monotonic() - job.started
                 print(
                     f"done  {job.name}  exit={job.exit_code}  {elapsed:.0f}s  "
-                    f"{json.dumps({k: v for k, v in job.report.items() if k in ('calibrated', 'reason', 'delivered', 'mutation_epochs', 'validation_calls', 'triggers_fired', 'cards_injected', 'cards_accepted', 'final_pass', 'arm', 'fork_key', 'base', 'gold')}, ensure_ascii=False)}",
+                    f"{json.dumps({k: v for k, v in job.report.items() if k in ('calibrated', 'reason', 'delivered', 'mutation_epochs', 'validation_calls', 'triggers_fired', 'cards_injected', 'cards_accepted', 'final_pass', 'arm', 'fork_key', 'fork_specs', 'base', 'gold')}, ensure_ascii=False)}",
                     flush=True,
                 )
         # launch what fits
         if pending:
             running_cal = sum(1 for j in running if j.kind == "calibrate")
             # native, kac and fork children are actor runs sharing the slot cap
-            running_native = sum(1 for j in running if j.kind in ("native", "kac", "fork"))
+            running_native = sum(1 for j in running if j.kind in ("native", "kac", "fork", "donor"))
             rss_now = batch_rss_mb(running)
             for job in list(pending):
                 slot_free = (
                     job.kind == "calibrate" and running_cal < MAX_CAL
-                ) or (job.kind in ("native", "kac", "fork") and running_native < MAX_NATIVE)
+                ) or (job.kind in ("native", "kac", "fork", "donor") and running_native < MAX_NATIVE)
                 if not slot_free:
                     continue
                 if time.monotonic() - last_launch < STAGGER_SECONDS:
