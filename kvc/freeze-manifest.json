@@ -1,0 +1,61 @@
+{
+  "schema": "kvc-freeze-manifest/1",
+  "task_suites": {
+    "pi_ai_tasks_v1.jsonl": "5ec8ffbaad50e9f8cf024898ab1dfa5cfc3ce2fe3a50b6184fb7b2b153183780",
+    "pi_ai_tasks_v2.jsonl": "16225cbf97ad1e6cce4e49bead4a4a9a2ed1b909c8d8ef0b14e42c06388c6ea2",
+    "pi_coding_tasks_v3.jsonl": "b89a34ecf2fe56d64e60ca3693301dd9b04d8a0f822520f66acbb6c0dc8e076e",
+    "pi_tasks_v1.jsonl": "71cd55a4edf447de3bca010c686f9c199c967a8600e1675c0f4b3908e1533450"
+  },
+  "configs": {
+    "configs/kaa/pi-retry-attempt-timeout/candidates/cand-A.diff": "89104bb8a719cdf62f2ea757b4727c485deb1e2fa370288edc875bc844bd3b3b",
+    "configs/kaa/pi-retry-attempt-timeout/candidates/cand-B.diff": "78cece4500ebd4847936401b18f61b2cfb90cc5264152816745ef62287dd106a",
+    "configs/kaa/pi-retry-attempt-timeout/candidates/cand-C.diff": "a9aaad11427abe493a9ceafb990efe1f03d25f819de12548334e25cd0557ec8f",
+    "configs/kaa/pi-retry-attempt-timeout/candidates/manifest.json": "51b2d07f5c71d583a646891eb8255a5fb129ffb0adddfa43fb288e8f7c0ccecb",
+    "configs/prompts/kac_checkpoint.md": "3c52088eeb5785db36a8bec9b83610966c29fe7ed32914aa0dc48dceb6e3dac7"
+  },
+  "harness": {
+    "__init__.py": "0f0f155398c2526c7924b94574707e3558b3a6c7014a8e767e2432bf121703a6",
+    "audit_leaks.py": "b0eb3e65c4fbb6534d41c52ef2ab4b8e9ae4a65a7c3732604c39739610a0a5e0",
+    "calibrate_worker.py": "7c67b7785cf6fb02d5eb04c444864cdf63670a724599201d1c57a8ee37aed149",
+    "fork_collect.py": "003e4207daf5fa2056e715a1f7d4efc2723740d872433e0354db5fc0dd917efb",
+    "freeze_manifest.py": "633c4ecf5b9cc7eb882d82f1c79c5376c505a898efc30481c7b49291ec963e62",
+    "gps.py": "2028d7d7fdc6a2161bbeac67884c66d3fa6a75e79114a6be6a28f9d14686e94a",
+    "incumbent.py": "7db1de3b955fed183c440b51ad215e3ff58f147675f8d3b605ee9e2b36f2f93c",
+    "kact.py": "404c4ea091f83b3f28ff45f012ada2f122dbef205cf78bf817dce4b1a96e274b",
+    "kvc_run.py": "474dbd84bf294a5fdc0a0bf306e8a1e5244571f43e80c9e195be63449305a791",
+    "materialize.py": "984fae739126b54c84a078752ba2b463891878dc84b8d6661474e9880ba7be43",
+    "mutation_tracker.py": "35ed6b31dee7799b052826e3d8f574aae289161223e120c1e723692b17c9385e",
+    "pi_bridge.py": "ccbb0f74265e80752848207fe94d970f48a7372e8b69db6f73dd227ee7330ffc",
+    "probes.py": "379d02a94ea5828dc402a2673c79b3984641ca99c66c7271a789f609de4b3aea",
+    "providers.py": "b85a93dfcdb8c19da410f8d702dc351db756157e1c3b9eb9a08bcb064e61ddcd",
+    "run_batch.py": "5f8c6736edde59cef8aab592df7e6c34036d1059d372e83a8be2598872e93e44",
+    "run_fork_child.py": "290b84a30c31d92fe236dff272a8c264457261b58361b76549f21d9455f53272",
+    "run_fork_donor.py": "17e4bb4593028b7c006a8762ebd1719beef2c1d219c123d5810ab89aab496349",
+    "run_hint.py": "e9a9cc3475ffed013d3dc34b008d34839b0819e1c35b43f56cbd5b682212f961",
+    "run_kac.py": "26fb46474b2a9ae253d53f62c2c7e277020d470758e65ec7ce4291a5aa7cb365",
+    "run_native.py": "ba22b6e06718d1bd0a8034477da420e6efe24f54f927d358d68e1cdc00f8fb16",
+    "smoke_steer.py": "0b702c29fc79babf6067eee521d7705c0844ea6c3630e14ca392adbb3eb56a0f",
+    "validate_overlay.py": "b2a61c4837c3f98fd5622b3436970df0e0ff08ae0eec6c7e9812f1f2cb607621"
+  },
+  "protocol_docs": {
+    "DESIGN.md": "8dd0045e09de3d26fc8a24a3c274eeae9a8c9cbd1b7484d75630a2eb43cf4f53",
+    "DESIGN-FORK.md": "c5c79152d751ef50b8879c6b90ab25a629e4eee4457682d16f6e9746cf92de57",
+    "DESIGN-R5.md": "04e143da0e222285d65cdfda841979d0fe3c539b694c6ffabbe617cdb2422438",
+    "PLAN-6ROUNDS.md": "72684fee621bc96caf427efb138fa930498d57362ca6ba861989f53d1b57e333"
+  },
+  "model": {
+    "provider": "dashscope-intl",
+    "model_id": "qwen3.8-flash",
+    "key_env_name": "KVC_API_KEY",
+    "thinking_level": "off",
+    "budget_seconds_default": 420.0
+  },
+  "pi_upstream_head": "853a80d26c90a14c1886f0ebb8ffaae133ca2185",
+  "fork_constants": {
+    "STEER_DELAY_SECONDS": 25.0,
+    "MIN_CHILD_BUDGET_SECONDS": 90.0,
+    "MIN_SESSION_SNAPSHOT_BYTES": 512,
+    "RESUME_PROMPT_sha256": "cec22a3e68d27c530472d89288acff69d2da39eb9fac1150b34e5a50277a24c4",
+    "SHAM_CARD_sha256": "056c5a9951eb472518d3369dbde9e894fc4bd2917c8debbeda9786c61da8d00f"
+  }
+}
