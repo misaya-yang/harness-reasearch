@@ -79,6 +79,14 @@ class RunConfig:
     # Task row for the overlay verifier (validate_overlay.py); staged into
     # run_dir/validator/ together with the precomputed hidden-test patch.
     validator_task: dict[str, Any] | None = None
+    # Session handling for trigger-time forks (DESIGN-FORK.md):
+    # - persist_session=True drops --no-session so the actor's transcript is
+    #   written under run_dir/agent-dir/sessions/ (fork donors).
+    # - fork_session_path, when set, replaces --no-session with
+    #   "--fork <path>": the child pi process replays the frozen donor
+    #   transcript exactly (SessionManager.forkFrom) and continues from it.
+    persist_session: bool = False
+    fork_session_path: Path | None = None
 
 
 @dataclass
@@ -292,7 +300,14 @@ class KvcRunner:
             "--tsconfig", str(cfg.pi_repo / "tsconfig.json"),
             str(cli),
             "--mode", "rpc",
-            "--no-session",
+        ]
+        if cfg.fork_session_path is not None:
+            # Exact transcript replay from a frozen snapshot. pi rejects
+            # --fork together with --no-session (validateForkFlags).
+            argv += ["--fork", str(cfg.fork_session_path)]
+        elif not cfg.persist_session:
+            argv.append("--no-session")
+        argv += [
             "--no-extensions",
             "--no-skills",
             "--no-prompt-templates",

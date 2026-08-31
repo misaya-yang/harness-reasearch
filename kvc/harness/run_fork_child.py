@@ -48,6 +48,15 @@ PROBE_TEMPLATE = KVC_ROOT / "configs" / "prompts" / "kac_checkpoint.md"
 # Frozen protocol constants (pre-registered; see DESIGN-FORK.md).
 STEER_DELAY_SECONDS = 25.0
 MIN_CHILD_BUDGET_SECONDS = 90.0
+# Exact-replay forks resume via one user prompt, byte-identical across arms
+# (arms differ ONLY in the card block steered afterwards). A resume prompt is
+# unavoidable: the forked child process is idle and needs input to continue;
+# the donor's own continuation has no such prompt (documented confound).
+RESUME_PROMPT = (
+    "Continue the task from the current state. The harness froze and resumed "
+    "this session at a checkpoint; nothing was lost. Keep working."
+)
+MIN_SESSION_SNAPSHOT_BYTES = 512
 SHAM_CARD = {
     "invariant": "Continue working toward the task goal as you understand it.",
     "edit_surface": "Not determined by this checkpoint.",
@@ -146,7 +155,19 @@ def main() -> int:
     # Child workspace = clone of the frozen snapshot tree.
     clone_tree(Path(spec["snapshot_path"]), workspace)
 
-    continuation_prompt = build_continuation_prompt(task, spec, inputs)
+    # Mode selection: exact transcript replay (pi --fork) when the donor
+    # persisted a session snapshot; canonical-state reconstruction otherwise.
+    snap = spec.get("session_snapshot")
+    replay = (
+        bool(snap)
+        and Path(snap).exists()
+        and Path(snap).stat().st_size >= MIN_SESSION_SNAPSHOT_BYTES
+    )
+    fork_meta["fork_mode"] = "replay" if replay else "reconstruction"
+    if replay:
+        child_prompt = RESUME_PROMPT
+    else:
+        child_prompt = build_continuation_prompt(task, spec, inputs)
 
     # KAC arm: generate the card from the frozen snapshot state with the exact
     # probe machinery (fresh context, no tools, 120s budget) BEFORE the child
@@ -185,7 +206,7 @@ def main() -> int:
     config = RunConfig(
         workspace=workspace,
         run_dir=run_dir,
-        task_prompt=continuation_prompt,
+        task_prompt=child_prompt,
         objective_anchor=objective_from_prompt(task["prompt"]),
         provider="dashscope-intl",
         model=QWEN_FLASH_ID,
@@ -202,6 +223,7 @@ def main() -> int:
         trigger_config=TriggerConfig(
             no_mutation_budget_ratio=float("inf"), post_pass_tool_calls=10**9
         ),
+        fork_session_path=Path(snap) if replay else None,
     )
     runner = KvcRunner(config)
     # Runner prep creates run_dir/state; keep child metadata inside run_dir.
@@ -226,7 +248,7 @@ def main() -> int:
             steer_thread.start()
         elif args.arm == "kac":
             fork_meta["card_note"] = "probe produced no parseable card; child runs unsteered"
-        outcome = runner.run_prompt(continuation_prompt)
+        outcome = runner.run_prompt(child_prompt)
     finally:
         if runner._proc and runner._proc.poll() is None:
             runner.finish()
@@ -250,9 +272,7 @@ def main() -> int:
     (run_dir / "state" / "fork.json").write_text(
         json.dumps(fork_meta, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
-    (run_dir / "state" / "continuation-prompt.txt").write_text(
-        continuation_prompt, encoding="utf-8"
-    )
+    (run_dir / "state" / "child-prompt.txt").write_text(child_prompt, encoding="utf-8")
     report = {
         "run_id": args.run_id,
         "task": spec["task_id"],

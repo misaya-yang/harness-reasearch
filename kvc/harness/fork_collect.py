@@ -49,6 +49,34 @@ def clone_tree(src: Path, dst: Path) -> None:
         shutil.copytree(src, dst, symlinks=True)
 
 
+def copy_session_snapshot(run_dir: Path, fork_dir: Path) -> str | None:
+    """Copy the donor's live pi session JSONL for exact-replay forks.
+
+    Sessions persist under run_dir/agent-dir/sessions/<encoded-cwd>/ when the
+    donor runs with persist_session=True. The live file is append-only, so the
+    copy may end mid-line: truncate at the last newline. Returns the snapshot
+    path, or None when no session file exists (e.g. --no-session donors).
+    """
+    sessions_root = run_dir / "agent-dir" / "sessions"
+    if not sessions_root.exists():
+        return None
+    candidates = sorted(
+        sessions_root.rglob("*.jsonl"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    if not candidates:
+        return None
+    data = candidates[0].read_bytes()
+    if b"\n" in data:
+        data = data[: data.rfind(b"\n") + 1]
+    if not data.strip():
+        return None
+    dest = fork_dir / "session-snapshot.jsonl"
+    dest.write_bytes(data)
+    return str(dest)
+
+
 def snapshot_workspace(workspace: Path, key: str) -> dict[str, Any]:
     """Freeze the workspace tree into a sibling directory; commit + tag it.
 
@@ -113,6 +141,7 @@ class ForkCollector:
             (fork_dir / "probe-input.json").write_text(
                 json.dumps(inputs, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
             )
+            session_snapshot = copy_session_snapshot(runner.config.run_dir, fork_dir)
             spec = {
                 "schema": "kvc-fork-spec/1",
                 "donor_run_id": self.run_id,
@@ -124,6 +153,7 @@ class ForkCollector:
                 "remaining_budget_seconds": round(runner.gps.remaining(), 1),
                 "elapsed_at_trigger_seconds": round(runner.gps.elapsed(), 1),
                 "read_paths": list(runner.read_paths),
+                "session_snapshot": session_snapshot,
                 "frozen_wall": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 **snapshot,
             }

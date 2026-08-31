@@ -73,6 +73,11 @@ def main() -> int:
         validator_task=task,
         models_json=dashscope_models_json(),
         extra_env={"PI_OFFLINE": "1"},
+        # Transcript persistence: fork children replay this session exactly
+        # via pi's --fork (SessionManager.forkFrom). File lives under
+        # run_dir/agent-dir/sessions/, already outside the actor's reach
+        # except through its own run dir (self-refs are audit-excluded).
+        persist_session=True,
     )
     collector = ForkCollector(task, args.task, run_id)
     (base / "arm.json").write_text(
