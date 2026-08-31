@@ -61,3 +61,14 @@ run_batch `--kac/--hint`.
   bottleneck beyond surface knowledge; kac-rescue ⇒ probe machinery suffices.
 - If both tasks show hint-rescue without kac-rescue, the trigger-time fork
   (R3) remains the unbiased KAC estimator; R5 only explains WHY native fails.
+
+## Outcome (2026-08-31, batch r5-rescue-2; scored under the rules above)
+
+8/8 runs completed, 0 nonzero exits, ZERO passes in every arm under every
+inclusion variant (kac: 1 run gold-excluded — first tool call navigated to
+the pi checkout via the system-prompt disclosure channel; hint: 2 runs
+harness-flagged, reported separately). Neither arm rescues ⇒ pre-registered
+verdict: initiation/execution bottleneck beyond surface knowledge. Full
+tables and process descriptives: analysis/round-5.md. One audit soundness
+fix applied PRE-scoring (audit_leaks self-attribution path-extent
+expansion; direction conservative — only removes false harness flags).

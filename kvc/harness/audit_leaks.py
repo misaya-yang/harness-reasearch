@@ -94,23 +94,26 @@ def audit_run(run_base: Path) -> dict:
         after the own-base string, only a path terminator (stop char or "/")
         counts as self; a component-continuation char means a LONGER sibling
         dir name (e.g. a fork child id embedding its donor id) and stays
-        flagged."""
-        # Occurrences starting at or before pos may still extend past it
-        # (marker inside the own-base path itself, e.g. env dumps).
-        search_end = pos + len(own_base)
-        while True:
-            idx = blob.rfind(own_base, 0, search_end)
-            if idx == -1 or idx > pos:
-                return False
-            end = idx + len(own_base)
-            if (end >= len(blob) or blob[end] == "/"
-                    or blob[end] in _PATH_STOP):
-                extent = end
-                while extent < len(blob) and blob[extent] not in _PATH_STOP:
-                    extent += 1
-                if idx <= pos < extent:
-                    return True
-            search_end = idx
+        flagged.
+
+        Soundness fix 2026-08-31 (R5 audit, pre-scoring): the previous
+        rfind-window version missed own paths where the run id FOLLOWS the
+        marker (results/kvc/<own-id>/...): own_base then ends beyond
+        pos+len(own_base) and the windowed rfind could not see it, so own
+        paths were false-flagged (conservative direction only). Now expand
+        to the full path extent around the marker and test containment."""
+        lo = pos
+        while lo > 0 and blob[lo - 1] not in _PATH_STOP:
+            lo -= 1
+        hi = pos
+        while hi < len(blob) and blob[hi] not in _PATH_STOP:
+            hi += 1
+        seg = blob[lo:hi]
+        idx = seg.find(own_base)
+        if idx == -1:
+            return False
+        end = idx + len(own_base)
+        return end >= len(seg) or seg[end] == "/" or seg[end] in _PATH_STOP
 
     def scan(blob: str, phase: str) -> None:
         for markers, bucket, anchor_only in (

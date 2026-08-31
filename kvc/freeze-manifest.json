@@ -15,7 +15,7 @@
   },
   "harness": {
     "__init__.py": "0f0f155398c2526c7924b94574707e3558b3a6c7014a8e767e2432bf121703a6",
-    "audit_leaks.py": "a54024936ee5f1e373e8648e156dec81095d51729dbd61820ca601cba7e41d9a",
+    "audit_leaks.py": "0a2f70ed6c4dde580eff2701e8501b288b8640dc81846d26b6586f80dc2f3b24",
     "calibrate_worker.py": "7c67b7785cf6fb02d5eb04c444864cdf63670a724599201d1c57a8ee37aed149",
     "fork_collect.py": "003e4207daf5fa2056e715a1f7d4efc2723740d872433e0354db5fc0dd917efb",
     "freeze_manifest.py": "633c4ecf5b9cc7eb882d82f1c79c5376c505a898efc30481c7b49291ec963e62",
@@ -40,7 +40,7 @@
   "protocol_docs": {
     "DESIGN.md": "8dd0045e09de3d26fc8a24a3c274eeae9a8c9cbd1b7484d75630a2eb43cf4f53",
     "DESIGN-FORK.md": "cb379289d3a65e9a68a6e7f9fcbe510ac653529e15179297eaf2215a2761e409",
-    "DESIGN-R5.md": "3034f65d0d55ddeb94c813e46e7bd763ee005affa8c3faa9fd823035bee42e48",
+    "DESIGN-R5.md": "49ad7b156f79d4594fc572245d3be6384ff9db909249c246693df07acaabb637",
     "PLAN-6ROUNDS.md": "72684fee621bc96caf427efb138fa930498d57362ca6ba861989f53d1b57e333"
   },
   "model": {
