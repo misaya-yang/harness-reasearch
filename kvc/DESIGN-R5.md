@@ -31,13 +31,22 @@ immediately at T1; kac cards land at T1 + probe latency.
 Oracle-card hygiene: source files + natural-language direction only; never
 the gold diff; never regression-test file names (absent at base for both
 tasks — dangling references would be non-actionable oracle structure).
+2026-08-31 refinement (analysis/notes/oracle-gap.md): the "absent at base"
+claim is exact only for thinking-toggle; for compaction the test FILES
+exist at base but all 5 gold `-t` assertions are absent (base runs are
+green-but-blind). ORACLE_CARDS verified free of test names and `-t`
+patterns. Reading of R5 results must treat validation-onset as a mediating
+variable (oracle gap: no stock command produces a failing signal at base).
 
 ## Execution
 
 2 tasks × {kac, hint} × 2 replicates = 8 new runs; baseline = Round-2 clean
-native runs (audit tiers re-verified 2026-08-31): thinking-toggle r2, r3
-(0/2 pass; r1 excluded harness-tier); post-tool-compaction r1, r2, r3
-(0/3 pass, all clean). run_batch `--kac/--hint`.
+native runs (audit tiers re-verified 2026-08-31 with the hardened scanner):
+thinking-toggle r2, r3 (0/2 pass; r1 excluded harness-tier);
+post-tool-compaction r2, r3 (0/2 pass, clean; r1 reclassified harness-tier
+by result-blob scanning of node module-resolution errors — reported
+separately per the inclusion rule below, not pooled into the clean baseline).
+run_batch `--kac/--hint`.
 
 ## Analysis (frozen)
 

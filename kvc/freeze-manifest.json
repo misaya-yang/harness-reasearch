@@ -11,24 +11,24 @@
     "configs/kaa/pi-retry-attempt-timeout/candidates/cand-B.diff": "78cece4500ebd4847936401b18f61b2cfb90cc5264152816745ef62287dd106a",
     "configs/kaa/pi-retry-attempt-timeout/candidates/cand-C.diff": "a9aaad11427abe493a9ceafb990efe1f03d25f819de12548334e25cd0557ec8f",
     "configs/kaa/pi-retry-attempt-timeout/candidates/manifest.json": "51b2d07f5c71d583a646891eb8255a5fb129ffb0adddfa43fb288e8f7c0ccecb",
-    "configs/prompts/kac_checkpoint.md": "3c52088eeb5785db36a8bec9b83610966c29fe7ed32914aa0dc48dceb6e3dac7"
+    "configs/prompts/kac_checkpoint.md": "345250f0b01b1745d547577f7b6370f6be979534255d879c4886b75e9bc98c6c"
   },
   "harness": {
     "__init__.py": "0f0f155398c2526c7924b94574707e3558b3a6c7014a8e767e2432bf121703a6",
-    "audit_leaks.py": "b0eb3e65c4fbb6534d41c52ef2ab4b8e9ae4a65a7c3732604c39739610a0a5e0",
+    "audit_leaks.py": "a54024936ee5f1e373e8648e156dec81095d51729dbd61820ca601cba7e41d9a",
     "calibrate_worker.py": "7c67b7785cf6fb02d5eb04c444864cdf63670a724599201d1c57a8ee37aed149",
     "fork_collect.py": "003e4207daf5fa2056e715a1f7d4efc2723740d872433e0354db5fc0dd917efb",
     "freeze_manifest.py": "633c4ecf5b9cc7eb882d82f1c79c5376c505a898efc30481c7b49291ec963e62",
     "gps.py": "2028d7d7fdc6a2161bbeac67884c66d3fa6a75e79114a6be6a28f9d14686e94a",
     "incumbent.py": "7db1de3b955fed183c440b51ad215e3ff58f147675f8d3b605ee9e2b36f2f93c",
-    "kact.py": "404c4ea091f83b3f28ff45f012ada2f122dbef205cf78bf817dce4b1a96e274b",
-    "kvc_run.py": "474dbd84bf294a5fdc0a0bf306e8a1e5244571f43e80c9e195be63449305a791",
+    "kact.py": "c478f2b76ef583431a1357ba110f5043b550baf2a49bde01154d5bac0284adab",
+    "kvc_run.py": "78413348fb6a893ddb8c0721f3efde1dde767cf951aba5b093ec6de5a42a4e7d",
     "materialize.py": "984fae739126b54c84a078752ba2b463891878dc84b8d6661474e9880ba7be43",
     "mutation_tracker.py": "35ed6b31dee7799b052826e3d8f574aae289161223e120c1e723692b17c9385e",
     "pi_bridge.py": "ccbb0f74265e80752848207fe94d970f48a7372e8b69db6f73dd227ee7330ffc",
-    "probes.py": "379d02a94ea5828dc402a2673c79b3984641ca99c66c7271a789f609de4b3aea",
+    "probes.py": "f38a551b5610887acf6eea02f4ed10fdab8ac5f8acc5757371b26de37767430e",
     "providers.py": "b85a93dfcdb8c19da410f8d702dc351db756157e1c3b9eb9a08bcb064e61ddcd",
-    "run_batch.py": "5f8c6736edde59cef8aab592df7e6c34036d1059d372e83a8be2598872e93e44",
+    "run_batch.py": "567326a6ec151ad0434a2ac4e86a00d708ecb01a84cdba9e21fdd745f500dce8",
     "run_fork_child.py": "290b84a30c31d92fe236dff272a8c264457261b58361b76549f21d9455f53272",
     "run_fork_donor.py": "17e4bb4593028b7c006a8762ebd1719beef2c1d219c123d5810ab89aab496349",
     "run_hint.py": "e9a9cc3475ffed013d3dc34b008d34839b0819e1c35b43f56cbd5b682212f961",
@@ -39,8 +39,8 @@
   },
   "protocol_docs": {
     "DESIGN.md": "8dd0045e09de3d26fc8a24a3c274eeae9a8c9cbd1b7484d75630a2eb43cf4f53",
-    "DESIGN-FORK.md": "c5c79152d751ef50b8879c6b90ab25a629e4eee4457682d16f6e9746cf92de57",
-    "DESIGN-R5.md": "04e143da0e222285d65cdfda841979d0fe3c539b694c6ffabbe617cdb2422438",
+    "DESIGN-FORK.md": "cb379289d3a65e9a68a6e7f9fcbe510ac653529e15179297eaf2215a2761e409",
+    "DESIGN-R5.md": "3034f65d0d55ddeb94c813e46e7bd763ee005affa8c3faa9fd823035bee42e48",
     "PLAN-6ROUNDS.md": "72684fee621bc96caf427efb138fa930498d57362ca6ba861989f53d1b57e333"
   },
   "model": {
