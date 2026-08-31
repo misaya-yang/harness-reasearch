@@ -18,6 +18,8 @@ results/
 traces/
 reports/
 repo_audit/
+kvc/.cache/
+kvc/extensions/dist/
 
 # Local handoffs are operational state, not distributable source.
 HANDOFF_TO_*.md

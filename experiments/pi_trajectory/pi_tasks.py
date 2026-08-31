@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import signal
 import stat
@@ -53,6 +54,46 @@ def _sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _stage_loader_dylibs(source: Path, runtime_root: Path) -> None:
+    """Clone @loader_path-resolved dylibs beside a relocated binary.
+
+    Brew builds of node link @rpath/libnode.<abi>.dylib, resolved at the
+    source location via LC_RPATH (@loader_path, @loader_path/../lib). A flat
+    clone outside the cellar loses those search paths, so the referenced
+    libraries are cloned beside the binary, where @loader_path finds them.
+    """
+    try:
+        deps = subprocess.check_output(["otool", "-L", str(source)], text=True)
+        load_commands = subprocess.check_output(["otool", "-l", str(source)], text=True)
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return
+    # LC_RPATH entries are the @rpath search dirs, typically @loader_path and
+    # @loader_path/../lib; resolve them against the source's location.
+    search_dirs: list[Path] = []
+    for match in re.finditer(r"cmd LC_RPATH\n.*?path (.+?) \(", load_commands, re.DOTALL):
+        search_dirs.append(Path(match.group(1).replace("@loader_path", str(source.parent))))
+    for line in deps.splitlines()[1:]:
+        dep = line.split("(")[0].strip()
+        if not dep.startswith("@rpath/"):
+            continue
+        relative = dep[len("@rpath/"):]
+        resolved: Path | None = None
+        for base in search_dirs:
+            candidate = base / relative
+            if candidate.is_file():
+                resolved = candidate
+                break
+        if resolved is None:
+            continue
+        target = runtime_root / resolved.name
+        if target.exists() and _sha256_file(target) == _sha256_file(resolved):
+            continue
+        staging = runtime_root / f".{resolved.name}-{os.getpid()}"
+        subprocess.run(["cp", "-c", str(resolved), str(staging)], check=True)
+        staging.chmod(resolved.stat().st_mode)
+        staging.rename(target)
+
+
 def stage_neutral_node() -> Path:
     """Clone the Node executable outside the denied user home for sandboxed children."""
     global _NEUTRAL_NODE_VERIFIED
@@ -69,6 +110,7 @@ def stage_neutral_node() -> Path:
             or _sha256_file(NEUTRAL_NODE) != manifest.get("target_sha256")
         ):
             raise RuntimeError("neutral Node runtime integrity mismatch")
+        _stage_loader_dylibs(source, NEUTRAL_RUNTIME_ROOT)
         _NEUTRAL_NODE_VERIFIED = True
         return NEUTRAL_NODE
     NEUTRAL_RUNTIME_ROOT.mkdir(parents=True, exist_ok=True)
@@ -92,6 +134,7 @@ def stage_neutral_node() -> Path:
         + "\n",
         encoding="utf-8",
     )
+    _stage_loader_dylibs(source, NEUTRAL_RUNTIME_ROOT)
     _NEUTRAL_NODE_VERIFIED = True
     return NEUTRAL_NODE
 
