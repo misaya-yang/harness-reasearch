@@ -219,6 +219,31 @@ def build_jobs(args: argparse.Namespace) -> list[Job]:
                         rss_estimate_mb=KAC_RSS_ESTIMATE_MB,
                     )
                 )
+    if args.hint:
+        for task_id in [t.strip() for t in args.hint.split(",") if t.strip()]:
+            for i in range(1, args.reps + 1):
+                run_id = f"{task_id}-hint-r{i}-{stamp}"
+                jobs.append(
+                    Job(
+                        kind="hint",
+                        name=f"hint:{run_id}",
+                        argv=[
+                            sys.executable,
+                            "-m",
+                            "kvc.harness.run_hint",
+                            "--task",
+                            task_id,
+                            "--suite",
+                            args.suite,
+                            "--run-id",
+                            run_id,
+                            "--budget",
+                            str(args.budget),
+                        ],
+                        watchdog_seconds=NATIVE_WATCHDOG_SECONDS,
+                        rss_estimate_mb=NATIVE_RSS_ESTIMATE_MB,
+                    )
+                )
     if args.fork_specs:
         # Trigger-time forks: every fork-spec.json under the given root spawns
         # one child per arm per replicate. Kind "fork" shares the actor slot.
@@ -283,7 +308,7 @@ def collect(job: Job) -> None:
         tail = job.log_path.read_text(encoding="utf-8", errors="replace")[-1500:]
     except OSError:
         pass
-    if job.kind in ("native", "kac", "fork", "donor"):
+    if job.kind in ("native", "kac", "fork", "donor", "hint"):
         # actor runners persist the full report; run_id is the job name suffix
         run_id = job.name.split(":", 1)[1]
         report_path = RESULTS_ROOT / run_id / "report.json"
@@ -323,6 +348,7 @@ def main() -> int:
     parser.add_argument("--native", default=None, help="comma-separated task ids for native replicates")
     parser.add_argument("--donor", default=None, help="comma-separated task ids for fork-donor runs")
     parser.add_argument("--kac", default=None, help="comma-separated task ids for KAC-arm replicates")
+    parser.add_argument("--hint", default=None, help="comma-separated task ids for R5 oracle-hint replicates")
     parser.add_argument("--fork-specs", default=None, help="root dir scanned for fork-spec.json (trigger-time fork children)")
     parser.add_argument("--fork-arms", default="none,sham,kac", help="comma-separated fork arms")
     parser.add_argument("--fork-children", type=int, default=2, help="children per spec per arm")
@@ -335,7 +361,7 @@ def main() -> int:
     if not jobs:
         print("nothing to do (all tasks already calibrated, no --native/--kac given)")
         return 0
-    if any(job.kind in ("native", "kac", "fork", "donor") for job in jobs) and not os.environ.get(KEY_ENV_NAME):
+    if any(job.kind in ("native", "kac", "fork", "donor", "hint") for job in jobs) and not os.environ.get(KEY_ENV_NAME):
         print(f"FAIL: actor jobs need {KEY_ENV_NAME} in the environment", file=sys.stderr)
         return 2
 
@@ -374,12 +400,12 @@ def main() -> int:
         if pending:
             running_cal = sum(1 for j in running if j.kind == "calibrate")
             # native, kac and fork children are actor runs sharing the slot cap
-            running_native = sum(1 for j in running if j.kind in ("native", "kac", "fork", "donor"))
+            running_native = sum(1 for j in running if j.kind in ("native", "kac", "fork", "donor", "hint"))
             rss_now = batch_rss_mb(running)
             for job in list(pending):
                 slot_free = (
                     job.kind == "calibrate" and running_cal < MAX_CAL
-                ) or (job.kind in ("native", "kac", "fork", "donor") and running_native < MAX_NATIVE)
+                ) or (job.kind in ("native", "kac", "fork", "donor", "hint") and running_native < MAX_NATIVE)
                 if not slot_free:
                     continue
                 if time.monotonic() - last_launch < STAGGER_SECONDS:
