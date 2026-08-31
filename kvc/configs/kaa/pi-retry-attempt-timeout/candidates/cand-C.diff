@@ -1,0 +1,146 @@
+diff --git a/packages/coding-agent/src/core/remote-catalog-provider.ts b/packages/coding-agent/src/core/remote-catalog-provider.ts
+index c79b7e3..b35aab5 100644
+--- a/packages/coding-agent/src/core/remote-catalog-provider.ts
++++ b/packages/coding-agent/src/core/remote-catalog-provider.ts
+@@ -5,6 +5,7 @@ import { getPiUserAgent } from "../utils/pi-user-agent.ts";
+ 
+ const DEFAULT_CATALOG_BASE_URL = "https://pi.dev";
+ export const REMOTE_CATALOG_REFRESH_INTERVAL_MS = 4 * 60 * 60 * 1000;
++const CATALOG_ATTEMPT_TIMEOUT_MS = 10_000;
+ 
+ function mergeModels(baseline: readonly Model<Api>[], dynamic: readonly Model<Api>[]): Model<Api>[] {
+ 	const merged = [...baseline];
+@@ -78,14 +79,18 @@ export function withRemoteCatalog(
+ 			// leave the overlay empty.
+ 			const validator = stored?.models.length ? stored.etag : undefined;
+ 			const url = new URL(`/api/models/providers/${encodeURIComponent(provider.id)}`, catalogBaseUrl);
+-			const response = await fetchWithRetry(url, {
+-				headers: {
+-					accept: "application/json",
+-					"User-Agent": getPiUserAgent(VERSION),
+-					...(validator ? { "if-none-match": validator } : {}),
++			const response = await fetchWithRetry(
++				url,
++				{
++					headers: {
++						accept: "application/json",
++						"User-Agent": getPiUserAgent(VERSION),
++						...(validator ? { "if-none-match": validator } : {}),
++					},
++					signal: context.signal,
+ 				},
+-				signal: context.signal,
+-			});
++				{ attemptTimeoutMs: CATALOG_ATTEMPT_TIMEOUT_MS },
++			);
+ 			if (context.signal.aborted) return;
+ 			const checkedAt = Date.now();
+ 			// Unchanged: dynamicModels already holds the stored overlay, so only the
+diff --git a/packages/coding-agent/src/utils/management-http.ts b/packages/coding-agent/src/utils/management-http.ts
+index bbaab93..4b6ccaf 100644
+--- a/packages/coding-agent/src/utils/management-http.ts
++++ b/packages/coding-agent/src/utils/management-http.ts
+@@ -1,14 +1,20 @@
+ type FetchInput = Parameters<typeof fetch>[0];
+ 
+ const RETRYABLE_STATUS_CODES = new Set([408, 425, 429, 500, 502, 503, 504]);
++const DEFAULT_ATTEMPT_TIMEOUT_MS = 10_000;
+ 
+ export interface FetchRetryOptions {
+ 	/** Number of additional attempts after the initial request. Defaults to two. */
+ 	maxRetries?: number;
+ 	/** Retry transient HTTP responses as well as transport failures. Defaults to true. */
+ 	retryOnStatus?: boolean;
+-	/** Per-attempt timeout. A new timeout is created for every attempt. */
++	/** Overall timeout budget shared by all attempts. */
+ 	timeoutMs?: number;
++	/**
++	 * Per-attempt timeout, applied when no overall timeout is given so a hung
++	 * attempt can be abandoned and retried. Defaults to ten seconds.
++	 */
++	attemptTimeoutMs?: number;
+ }
+ 
+ /**
+@@ -19,8 +25,10 @@ export interface FetchRetryOptions {
+  * agent/model operations: those can fail after the HTTP request starts and are
+  * retried by their semantic caller instead.
+  *
+- * Caller cancellation is terminal. When timeoutMs is supplied, it is the
+- * overall time budget shared by all attempts.
++ * Caller cancellation is terminal. When timeoutMs is supplied it is the overall
++ * time budget shared by all attempts; otherwise every individual attempt is
++ * bounded by attemptTimeoutMs (defaulting to DEFAULT_ATTEMPT_TIMEOUT_MS) so a
++ * hung attempt can time out and be retried.
+  */
+ export async function fetchWithRetry(
+ 	input: FetchInput,
+@@ -33,19 +41,45 @@ export async function fetchWithRetry(
+ 			: Math.max(0, Math.floor(options.maxRetries));
+ 	const retryOnStatus = options.retryOnStatus ?? true;
+ 	const parentSignal = init?.signal;
+-	const timeoutSignal =
+-		options.timeoutMs !== undefined && options.timeoutMs > 0 ? AbortSignal.timeout(options.timeoutMs) : undefined;
+-	const signal = timeoutSignal
++	const hasOverallTimeout = options.timeoutMs !== undefined && options.timeoutMs > 0;
++	const perAttemptTimeoutMs = hasOverallTimeout
++		? undefined
++		: options.attemptTimeoutMs !== undefined && options.attemptTimeoutMs > 0
++			? options.attemptTimeoutMs
++			: DEFAULT_ATTEMPT_TIMEOUT_MS;
++	const overallSignal = hasOverallTimeout ? AbortSignal.timeout(options.timeoutMs as number) : undefined;
++	const signal = overallSignal
+ 		? parentSignal
+-			? AbortSignal.any([parentSignal, timeoutSignal])
+-			: timeoutSignal
++			? AbortSignal.any([parentSignal, overallSignal])
++			: overallSignal
+ 		: parentSignal;
++	let clearAttemptTimeout = () => {};
+ 
+ 	for (let attempt = 0; ; attempt++) {
+ 		signal?.throwIfAborted();
+ 
++		// Each attempt gets its own timeout unless an explicit overall budget was
++		// requested, so a hung attempt is abandoned and retried inside that budget.
++		let attemptSignal = signal;
++		if (perAttemptTimeoutMs !== undefined) {
++			const attemptTimeout = AbortSignal.timeout(perAttemptTimeoutMs);
++			attemptSignal = parentSignal ? AbortSignal.any([parentSignal, attemptTimeout]) : attemptTimeout;
++			clearAttemptTimeout = () => {
++				// AbortSignal.timeout() keeps a global timer alive until it fires; clear
++				// it once the attempt settles so finished requests do not hold the process.
++				attemptTimeout.addEventListener("abort", () => {}, { once: true });
++				try {
++					(attemptTimeout as AbortSignal & { reason?: { [clear: symbol]: unknown } }).reason?.[
++						Symbol.for("nodejs.timeoutSignal.clear")
++					]?.();
++				} catch {
++					// The timeout already fired, or the platform does not expose a clear hook.
++				}
++			};
++		}
++
+ 		try {
+-			const response = await fetch(input, signal ? { ...init, signal } : init);
++			const response = await fetch(input, attemptSignal ? { ...init, signal: attemptSignal } : init);
+ 			const shouldRetry = retryOnStatus && RETRYABLE_STATUS_CODES.has(response.status) && attempt < maxRetries;
+ 			if (!shouldRetry) return response;
+ 			try {
+@@ -57,12 +91,14 @@ export async function fetchWithRetry(
+ 		} catch (error) {
+ 			if (
+ 				parentSignal?.aborted ||
+-				timeoutSignal?.aborted ||
+-				(error instanceof Error && error.name === "AbortError" && timeoutSignal === undefined) ||
++				overallSignal?.aborted ||
++				(error instanceof Error && error.name === "AbortError" && overallSignal === undefined) ||
+ 				attempt >= maxRetries
+ 			) {
+ 				throw error;
+ 			}
++		} finally {
++			clearAttemptTimeout();
+ 		}
+ 	}
+ }

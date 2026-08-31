@@ -1,0 +1,10 @@
+{
+  "task": "pi-retry-attempt-timeout",
+  "correct": "cand-A.diff",
+  "correct_source": "gold commit df018b60 (behavioral verifier passes)",
+  "distractors": {
+    "cand-B.diff": "run-0 final failing patch: inverted catch-branch condition, never validated",
+    "cand-C.diff": "r2-113034 final failing patch: overlay exit 1"
+  },
+  "anonymization": "candidate identities must never appear in a probe prompt; order randomized per probe with fixed seed"
+}
