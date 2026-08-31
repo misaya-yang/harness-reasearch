@@ -49,6 +49,9 @@ CAL_RSS_ESTIMATE_MB = 900
 NATIVE_RSS_ESTIMATE_MB = 2100
 # KAC actor plus a possible fresh-context probe subprocess.
 KAC_RSS_ESTIMATE_MB = 2600
+# Fork children: the kac arm generates a card probe before the child starts.
+FORK_RSS_ESTIMATE_MB = 2100
+FORK_KAC_RSS_ESTIMATE_MB = 2600
 CAL_WATCHDOG_SECONDS = 1500.0
 NATIVE_WATCHDOG_SECONDS = 720.0
 
@@ -191,6 +194,45 @@ def build_jobs(args: argparse.Namespace) -> list[Job]:
                         rss_estimate_mb=KAC_RSS_ESTIMATE_MB,
                     )
                 )
+    if args.fork_specs:
+        # Trigger-time forks: every fork-spec.json under the given root spawns
+        # one child per arm per replicate. Kind "fork" shares the actor slot.
+        specs = sorted(Path(args.fork_specs).rglob("fork-spec.json"))
+        arms = [a.strip() for a in args.fork_arms.split(",") if a.strip()]
+        for spec_path in specs:
+            try:
+                spec = json.loads(spec_path.read_text(encoding="utf-8"))
+            except Exception:
+                continue
+            safe_key = spec["key"].replace("@", "-").replace("/", "-")
+            for arm in arms:
+                for i in range(1, args.fork_children + 1):
+                    run_id = f"{spec['donor_run_id']}-fork-{safe_key}-{arm}-c{i}"
+                    jobs.append(
+                        Job(
+                            kind="fork",
+                            name=f"fork:{run_id}",
+                            argv=[
+                                sys.executable,
+                                "-m",
+                                "kvc.harness.run_fork_child",
+                                "--spec",
+                                str(spec_path),
+                                "--arm",
+                                arm,
+                                "--child",
+                                str(i),
+                                "--run-id",
+                                run_id,
+                                "--suite",
+                                args.suite,
+                            ],
+                            watchdog_seconds=NATIVE_WATCHDOG_SECONDS,
+                            rss_estimate_mb=(
+                                FORK_KAC_RSS_ESTIMATE_MB if arm == "kac" else FORK_RSS_ESTIMATE_MB
+                            ),
+                        )
+                    )
     return jobs
 
 
@@ -216,7 +258,7 @@ def collect(job: Job) -> None:
         tail = job.log_path.read_text(encoding="utf-8", errors="replace")[-1500:]
     except OSError:
         pass
-    if job.kind in ("native", "kac"):
+    if job.kind in ("native", "kac", "fork"):
         # run_native/run_kac persist the full report; run_id is the job name suffix
         run_id = job.name.split(":", 1)[1]
         report_path = RESULTS_ROOT / run_id / "report.json"
@@ -255,6 +297,9 @@ def main() -> int:
     parser.add_argument("--calibrate-uncalibrated", action="store_true")
     parser.add_argument("--native", default=None, help="comma-separated task ids for native replicates")
     parser.add_argument("--kac", default=None, help="comma-separated task ids for KAC-arm replicates")
+    parser.add_argument("--fork-specs", default=None, help="root dir scanned for fork-spec.json (trigger-time fork children)")
+    parser.add_argument("--fork-arms", default="none,sham,kac", help="comma-separated fork arms")
+    parser.add_argument("--fork-children", type=int, default=2, help="children per spec per arm")
     parser.add_argument("--reps", type=int, default=1)
     parser.add_argument("--budget", type=float, default=420.0)
     parser.add_argument("--batch-id", default=None)
@@ -264,7 +309,7 @@ def main() -> int:
     if not jobs:
         print("nothing to do (all tasks already calibrated, no --native/--kac given)")
         return 0
-    if any(job.kind in ("native", "kac") for job in jobs) and not os.environ.get(KEY_ENV_NAME):
+    if any(job.kind in ("native", "kac", "fork") for job in jobs) and not os.environ.get(KEY_ENV_NAME):
         print(f"FAIL: actor jobs need {KEY_ENV_NAME} in the environment", file=sys.stderr)
         return 2
 
@@ -296,19 +341,19 @@ def main() -> int:
                 elapsed = time.monotonic() - job.started
                 print(
                     f"done  {job.name}  exit={job.exit_code}  {elapsed:.0f}s  "
-                    f"{json.dumps({k: v for k, v in job.report.items() if k in ('calibrated', 'reason', 'delivered', 'mutation_epochs', 'validation_calls', 'triggers_fired', 'cards_injected', 'cards_accepted', 'base', 'gold')}, ensure_ascii=False)}",
+                    f"{json.dumps({k: v for k, v in job.report.items() if k in ('calibrated', 'reason', 'delivered', 'mutation_epochs', 'validation_calls', 'triggers_fired', 'cards_injected', 'cards_accepted', 'final_pass', 'arm', 'fork_key', 'base', 'gold')}, ensure_ascii=False)}",
                     flush=True,
                 )
         # launch what fits
         if pending:
             running_cal = sum(1 for j in running if j.kind == "calibrate")
-            # native and kac are both actor runs and share the actor slot cap
-            running_native = sum(1 for j in running if j.kind in ("native", "kac"))
+            # native, kac and fork children are actor runs sharing the slot cap
+            running_native = sum(1 for j in running if j.kind in ("native", "kac", "fork"))
             rss_now = batch_rss_mb(running)
             for job in list(pending):
                 slot_free = (
                     job.kind == "calibrate" and running_cal < MAX_CAL
-                ) or (job.kind in ("native", "kac") and running_native < MAX_NATIVE)
+                ) or (job.kind in ("native", "kac", "fork") and running_native < MAX_NATIVE)
                 if not slot_free:
                     continue
                 if time.monotonic() - last_launch < STAGGER_SECONDS:

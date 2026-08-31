@@ -45,9 +45,18 @@ def _git(workspace: Path, *args: str) -> str:
     return result.stdout
 
 
-def collect_probe_inputs(runner: KvcRunner, task: dict[str, Any]) -> dict[str, Any]:
-    """Bounded probe context built from machine state only."""
-    workspace = runner.config.workspace
+def collect_probe_inputs_from_state(
+    workspace: Path,
+    events_path: Path,
+    gps_render: str,
+    read_paths: list[str],
+    task: dict[str, Any],
+) -> dict[str, Any]:
+    """Bounded probe context built from machine state only.
+
+    Runner-free core so trigger-time forks can build the identical probe
+    context from a frozen snapshot (no live actor required).
+    """
     # Diff vs the workspace's root (benchmark base) commit, not HEAD: passing
     # validations are committed as incumbents, so vs-HEAD would hide the patch.
     roots = [r for r in _git(workspace, "rev-list", "--max-parents=0", "HEAD").split() if r]
@@ -73,7 +82,7 @@ def collect_probe_inputs(runner: KvcRunner, task: dict[str, Any]) -> dict[str, A
     budget = SOURCES_BUDGET_BYTES
     included: set[str] = set()
     candidates = list(changed)
-    for path in runner.read_paths[-RECENT_READS:]:
+    for path in read_paths[-RECENT_READS:]:
         try:
             rel = str(Path(path).resolve().relative_to(workspace.resolve()))
         except ValueError:
@@ -98,7 +107,6 @@ def collect_probe_inputs(runner: KvcRunner, task: dict[str, Any]) -> dict[str, A
             break
 
     counterexamples: list[str] = []
-    events_path = runner.config.run_dir / "events" / "events.jsonl"
     if events_path.exists():
         for line in events_path.read_text(encoding="utf-8").splitlines():
             try:
@@ -126,11 +134,22 @@ def collect_probe_inputs(runner: KvcRunner, task: dict[str, Any]) -> dict[str, A
 
     return {
         "task_prompt": task["prompt"],
-        "gps_render": runner.gps.render(),
+        "gps_render": gps_render,
         "diff": diff or "(no changes yet)",
         "sources": "".join(sources_parts) or "(no source collected)",
         "observations": "\n".join(observations),
     }
+
+
+def collect_probe_inputs(runner: KvcRunner, task: dict[str, Any]) -> dict[str, Any]:
+    """Live-actor wrapper: gather state from the running KvcRunner."""
+    return collect_probe_inputs_from_state(
+        workspace=runner.config.workspace,
+        events_path=runner.config.run_dir / "events" / "events.jsonl",
+        gps_render=runner.gps.render(),
+        read_paths=runner.read_paths,
+        task=task,
+    )
 
 
 def parse_card(text: str) -> dict[str, str] | None:
@@ -274,67 +293,74 @@ class KacController:
     def _run_probe(
         self, key: str, probe_dir: Path, prompt: str
     ) -> tuple[dict[str, str] | None, dict[str, Any]]:
-        cfg = self.actor_config
-        probe_ws = probe_dir / "workspace"
-        probe_ws.mkdir(parents=True, exist_ok=True)
-        subprocess.run(["git", "init", "-q"], cwd=probe_ws, check=True, timeout=30)
-        (probe_ws / "probe.txt").write_text("fresh-context probe workspace\n", encoding="utf-8")
-        subprocess.run(["git", "add", "-A"], cwd=probe_ws, check=True, timeout=30)
-        subprocess.run(
-            ["git", "-c", "user.name=KVC Probe", "-c", "user.email=kvc-probe@invalid",
-             "commit", "-q", "-m", "probe base"],
-            cwd=probe_ws, check=True, timeout=30,
-        )
-        from kvc.harness.gps import TriggerConfig
+        return run_probe(self.actor_config, key, probe_dir, prompt)
 
-        # Probes must not fire their own triggers: give them inert thresholds.
-        probe_config = dataclasses.replace(
-            cfg,
-            workspace=probe_ws,
-            run_dir=probe_dir / "run",
-            task_prompt=prompt,
-            objective_anchor=f"KAC checkpoint probe {key}",
-            # No tools: the probe's evidence is complete in the prompt. With a
-            # tool surface the model explores the empty probe workspace until
-            # budget instead of answering (round-1 r1: 191 events, 0 output).
-            tools=(),
-            extensions=(),
-            budget_seconds=PROBE_BUDGET_SECONDS,
-            validator_command=None,
-            validator_task=None,
-            trigger_config=TriggerConfig(
-                no_mutation_budget_ratio=float("inf"), post_pass_tool_calls=10**9
-            ),
-        )
-        probe_runner = KvcRunner(probe_config)
-        probe_runner.start()
-        try:
-            outcome = probe_runner.run_prompt(prompt)
-            messages_response = probe_runner.send_command({"type": "get_messages"}, timeout=15.0)
-        finally:
-            if probe_runner._proc and probe_runner._proc.poll() is None:
-                probe_runner.finish()
-        assistant_text = ""
-        for message in (messages_response or {}).get("data", {}).get("messages", []):
-            if message.get("role") != "assistant":
-                continue
-            content = message.get("content", [])
-            if isinstance(content, list):
-                text = "".join(
-                    part.get("text", "") for part in content if isinstance(part, dict)
-                )
-            else:
-                text = str(content)
-            if text.strip():
-                assistant_text = text
-        (probe_dir / "probe-output.txt").write_text(assistant_text, encoding="utf-8")
-        card = parse_card(assistant_text)
-        report = {
-            "probe_reason": outcome.reason,
-            "probe_output_chars": len(assistant_text),
-            "card_parsed": card is not None,
-        }
-        return card, report
+
+def run_probe(
+    cfg: RunConfig, key: str, probe_dir: Path, prompt: str
+) -> tuple[dict[str, str] | None, dict[str, Any]]:
+    """Fresh-context probe subprocess (module-level so trigger-time forks can
+    reuse the exact same probe machinery from a frozen snapshot)."""
+    probe_ws = probe_dir / "workspace"
+    probe_ws.mkdir(parents=True, exist_ok=True)
+    subprocess.run(["git", "init", "-q"], cwd=probe_ws, check=True, timeout=30)
+    (probe_ws / "probe.txt").write_text("fresh-context probe workspace\n", encoding="utf-8")
+    subprocess.run(["git", "add", "-A"], cwd=probe_ws, check=True, timeout=30)
+    subprocess.run(
+        ["git", "-c", "user.name=KVC Probe", "-c", "user.email=kvc-probe@invalid",
+         "commit", "-q", "-m", "probe base"],
+        cwd=probe_ws, check=True, timeout=30,
+    )
+    from kvc.harness.gps import TriggerConfig
+
+    # Probes must not fire their own triggers: give them inert thresholds.
+    probe_config = dataclasses.replace(
+        cfg,
+        workspace=probe_ws,
+        run_dir=probe_dir / "run",
+        task_prompt=prompt,
+        objective_anchor=f"KAC checkpoint probe {key}",
+        # No tools: the probe's evidence is complete in the prompt. With a
+        # tool surface the model explores the empty probe workspace until
+        # budget instead of answering (round-1 r1: 191 events, 0 output).
+        tools=(),
+        extensions=(),
+        budget_seconds=PROBE_BUDGET_SECONDS,
+        validator_command=None,
+        validator_task=None,
+        trigger_config=TriggerConfig(
+            no_mutation_budget_ratio=float("inf"), post_pass_tool_calls=10**9
+        ),
+    )
+    probe_runner = KvcRunner(probe_config)
+    probe_runner.start()
+    try:
+        outcome = probe_runner.run_prompt(prompt)
+        messages_response = probe_runner.send_command({"type": "get_messages"}, timeout=15.0)
+    finally:
+        if probe_runner._proc and probe_runner._proc.poll() is None:
+            probe_runner.finish()
+    assistant_text = ""
+    for message in (messages_response or {}).get("data", {}).get("messages", []):
+        if message.get("role") != "assistant":
+            continue
+        content = message.get("content", [])
+        if isinstance(content, list):
+            text = "".join(
+                part.get("text", "") for part in content if isinstance(part, dict)
+            )
+        else:
+            text = str(content)
+        if text.strip():
+            assistant_text = text
+    (probe_dir / "probe-output.txt").write_text(assistant_text, encoding="utf-8")
+    card = parse_card(assistant_text)
+    report = {
+        "probe_reason": outcome.reason,
+        "probe_output_chars": len(assistant_text),
+        "card_parsed": card is not None,
+    }
+    return card, report
 
 
 def _sha256(text: str) -> str:
