@@ -1,0 +1,386 @@
+{
+  "primary_task": "pi-find-root-relativization",
+  "donor_tiers": {
+    "pi-find-root-relativization-donor-r1-20260831-130609": "clean",
+    "pi-find-root-relativization-donor-r1-20260831-132101": "clean",
+    "pi-find-root-relativization-donor-r1-20260831-134550": "clean",
+    "pi-find-root-relativization-donor-r2-20260831-133534": "harness"
+  },
+  "counts": {
+    "children_total": 28,
+    "included": 20,
+    "replay": 15,
+    "reconstruction": 5,
+    "kac_nocard": 1,
+    "listed_excluded": 0,
+    "quarantined_donor": 7
+  },
+  "strata": {
+    "replay_primary": {
+      "stratum": "replay (primary)",
+      "children": 15,
+      "blocks": 3,
+      "arms": {
+        "kac": {
+          "n": 6,
+          "passes": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            0.0,
+            0.39033429165637346
+          ],
+          "validated_children": 1,
+          "validate_calls_total": 2,
+          "first_validate_mono_median": 16.582
+        },
+        "sham": {
+          "n": 6,
+          "passes": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            0.0,
+            0.39033429165637346
+          ],
+          "validated_children": 1,
+          "validate_calls_total": 1,
+          "first_validate_mono_median": 12.912
+        },
+        "none": {
+          "n": 3,
+          "passes": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            0.0,
+            0.5614970356393196
+          ],
+          "validated_children": 1,
+          "validate_calls_total": 1,
+          "first_validate_mono_median": 110.291
+        }
+      },
+      "test_kac_vs_none": {
+        "informative_blocks": 2,
+        "total_blocks": 3,
+        "observed_statistic": 0,
+        "permutation_space": 150,
+        "method": "exact enumeration (150 assignments)",
+        "p_value": 1.0,
+        "p_value_note": "descriptive, NON-decisional: the pre-registered 2*2^-B block floor (p_min_exact_floor) alone governs reject/estimate calls (causal-design review 2026-08-31; DESIGN-FORK amendment)",
+        "p_min_exact_floor": 0.5,
+        "can_reject_alpha_05": false,
+        "stat_ci_95": [
+          0,
+          0
+        ],
+        "shift_ci_95": [
+          0.0,
+          0.0
+        ]
+      },
+      "hodges_lehmann": {
+        "blocks": 2,
+        "shift": 0.0,
+        "block_diffs": [
+          0.0,
+          0.0
+        ]
+      },
+      "donor_level_hl": {
+        "donors": 2,
+        "hl_donor_pooled": 0.0,
+        "donor_diffs": {
+          "pi-find-root-relativization-donor-r1-20260831-132101": 0.0,
+          "pi-find-root-relativization-donor-r1-20260831-134550": 0.0
+        },
+        "leave_one_donor_out": {
+          "pi-find-root-relativization-donor-r1-20260831-132101": 0.0,
+          "pi-find-root-relativization-donor-r1-20260831-134550": 0.0
+        },
+        "lodo_sign_stable": true
+      },
+      "t2_fidelity": {
+        "children_t2_none": 2,
+        "unchanged_tree_tested": 0,
+        "reproduced_fail": 0,
+        "breaches": [],
+        "alarm": false,
+        "untested_specs": [
+          "pi-find-root-relativization-donor-r1-20260831-134550/T2@epoch0"
+        ]
+      },
+      "block_diffs_by_trigger": {
+        "pi-find-root-relativization-donor-r1-20260831-132101/T1": {
+          "trigger": "T1",
+          "kac": [
+            0,
+            0
+          ],
+          "none": [
+            0
+          ],
+          "sham": [
+            0,
+            0
+          ]
+        },
+        "pi-find-root-relativization-donor-r1-20260831-134550/T1": {
+          "trigger": "T1",
+          "kac": [
+            0,
+            0
+          ],
+          "none": [],
+          "sham": [
+            0,
+            0
+          ]
+        },
+        "pi-find-root-relativization-donor-r1-20260831-134550/T2@epoch0": {
+          "trigger": "T2",
+          "kac": [
+            0,
+            0
+          ],
+          "none": [
+            0,
+            0
+          ],
+          "sham": [
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "reconstruction_secondary": {
+      "stratum": "reconstruction (secondary)",
+      "children": 5,
+      "blocks": 1,
+      "arms": {
+        "kac": {
+          "n": 1,
+          "passes": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            0.0,
+            0.7934506882081973
+          ],
+          "validated_children": 0,
+          "validate_calls_total": 0,
+          "first_validate_mono_median": null
+        },
+        "sham": {
+          "n": 2,
+          "passes": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            0.0,
+            0.6576197760453506
+          ],
+          "validated_children": 0,
+          "validate_calls_total": 0,
+          "first_validate_mono_median": null
+        },
+        "none": {
+          "n": 2,
+          "passes": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            0.0,
+            0.6576197760453506
+          ],
+          "validated_children": 0,
+          "validate_calls_total": 0,
+          "first_validate_mono_median": null
+        }
+      },
+      "test_kac_vs_none": {
+        "informative_blocks": 1,
+        "total_blocks": 1,
+        "observed_statistic": 0,
+        "permutation_space": 5,
+        "method": "exact enumeration (5 assignments)",
+        "p_value": 1.0,
+        "p_value_note": "descriptive, NON-decisional: the pre-registered 2*2^-B block floor (p_min_exact_floor) alone governs reject/estimate calls (causal-design review 2026-08-31; DESIGN-FORK amendment)",
+        "p_min_exact_floor": 1.0,
+        "can_reject_alpha_05": false,
+        "stat_ci_95": [
+          0,
+          0
+        ],
+        "shift_ci_95": [
+          0.0,
+          0.0
+        ]
+      },
+      "hodges_lehmann": {
+        "blocks": 1,
+        "shift": 0.0,
+        "block_diffs": [
+          0.0
+        ]
+      },
+      "donor_level_hl": {
+        "donors": 1,
+        "hl_donor_pooled": 0.0,
+        "donor_diffs": {
+          "pi-find-root-relativization-donor-r1-20260831-130609": 0.0
+        },
+        "leave_one_donor_out": {
+          "pi-find-root-relativization-donor-r1-20260831-130609": null
+        },
+        "lodo_sign_stable": true
+      },
+      "t2_fidelity": {
+        "children_t2_none": 0,
+        "unchanged_tree_tested": 0,
+        "reproduced_fail": 0,
+        "breaches": [],
+        "alarm": false,
+        "untested_specs": []
+      },
+      "block_diffs_by_trigger": {
+        "pi-find-root-relativization-donor-r1-20260831-130609/T1": {
+          "trigger": "T1",
+          "kac": [
+            0
+          ],
+          "none": [
+            0,
+            0
+          ],
+          "sham": [
+            0,
+            0
+          ]
+        }
+      }
+    }
+  },
+  "kac_nocard_group": [
+    {
+      "run_id": "pi-find-root-relativization-donor-r1-20260831-130609-fork-T1-kac-c1",
+      "fork_key": "T1",
+      "final_pass": false
+    }
+  ],
+  "listed_excluded": [],
+  "quarantined": [
+    {
+      "run_id": "pi-find-root-relativization-donor-r1-20260831-132101-fork-T1-none-c2",
+      "donor_tier": "clean",
+      "own_tier": "gold",
+      "reason": "child own tier gold (behavioral)"
+    },
+    {
+      "run_id": "pi-find-root-relativization-donor-r1-20260831-134550-fork-T1-none-c1",
+      "donor_tier": "clean",
+      "own_tier": "gold",
+      "reason": "child own tier gold (behavioral)"
+    },
+    {
+      "run_id": "pi-find-root-relativization-donor-r1-20260831-134550-fork-T1-none-c2",
+      "donor_tier": "clean",
+      "own_tier": "gold",
+      "reason": "child own tier gold (behavioral)"
+    },
+    {
+      "run_id": "pi-find-root-relativization-donor-r2-20260831-133534-fork-T2-epoch6-none-c1",
+      "donor_tier": "harness",
+      "own_tier": "harness",
+      "reason": "donor tier harness"
+    },
+    {
+      "run_id": "pi-find-root-relativization-donor-r2-20260831-133534-fork-T2-epoch6-none-c2",
+      "donor_tier": "harness",
+      "own_tier": "harness",
+      "reason": "donor tier harness"
+    },
+    {
+      "run_id": "pi-find-root-relativization-donor-r2-20260831-133534-fork-T2-epoch6-sham-c1",
+      "donor_tier": "harness",
+      "own_tier": "harness",
+      "reason": "donor tier harness"
+    },
+    {
+      "run_id": "pi-find-root-relativization-donor-r2-20260831-133534-fork-T2-epoch6-sham-c2",
+      "donor_tier": "harness",
+      "own_tier": "harness",
+      "reason": "donor tier harness"
+    }
+  ],
+  "harness_flagged_included": [
+    {
+      "run_id": "pi-find-root-relativization-donor-r1-20260831-130609-fork-T1-sham-c2",
+      "arm": "sham",
+      "fork_key": "T1",
+      "final_pass": false
+    },
+    {
+      "run_id": "pi-find-root-relativization-donor-r1-20260831-132101-fork-T1-kac-c1",
+      "arm": "kac",
+      "fork_key": "T1",
+      "final_pass": false
+    },
+    {
+      "run_id": "pi-find-root-relativization-donor-r1-20260831-132101-fork-T1-none-c1",
+      "arm": "none",
+      "fork_key": "T1",
+      "final_pass": false
+    },
+    {
+      "run_id": "pi-find-root-relativization-donor-r1-20260831-132101-fork-T1-sham-c2",
+      "arm": "sham",
+      "fork_key": "T1",
+      "final_pass": false
+    },
+    {
+      "run_id": "pi-find-root-relativization-donor-r1-20260831-134550-fork-T1-kac-c1",
+      "arm": "kac",
+      "fork_key": "T1",
+      "final_pass": false
+    },
+    {
+      "run_id": "pi-find-root-relativization-donor-r1-20260831-134550-fork-T1-kac-c2",
+      "arm": "kac",
+      "fork_key": "T1",
+      "final_pass": false
+    },
+    {
+      "run_id": "pi-find-root-relativization-donor-r1-20260831-134550-fork-T1-sham-c1",
+      "arm": "sham",
+      "fork_key": "T1",
+      "final_pass": false
+    },
+    {
+      "run_id": "pi-find-root-relativization-donor-r1-20260831-134550-fork-T2-epoch0-kac-c1",
+      "arm": "kac",
+      "fork_key": "T2@epoch0",
+      "final_pass": false
+    },
+    {
+      "run_id": "pi-find-root-relativization-donor-r1-20260831-134550-fork-T2-epoch0-kac-c2",
+      "arm": "kac",
+      "fork_key": "T2@epoch0",
+      "final_pass": false
+    },
+    {
+      "run_id": "pi-find-root-relativization-donor-r1-20260831-134550-fork-T2-epoch0-none-c1",
+      "arm": "none",
+      "fork_key": "T2@epoch0",
+      "final_pass": false
+    },
+    {
+      "run_id": "pi-find-root-relativization-donor-r1-20260831-134550-fork-T2-epoch0-none-c2",
+      "arm": "none",
+      "fork_key": "T2@epoch0",
+      "final_pass": false
+    },
+    {
+      "run_id": "pi-find-root-relativization-donor-r1-20260831-134550-fork-T2-epoch0-sham-c1",
+      "arm": "sham",
+      "fork_key": "T2@epoch0",
+      "final_pass": false
+    }
+  ]
+}

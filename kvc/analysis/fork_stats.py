@@ -60,9 +60,17 @@ def wilson_ci(k: int, n: int) -> tuple[float, float] | None:
 
 
 def collect_children(results_root: Path) -> list[dict]:
-    """All fork-child rows: report.json merged with run/state/fork.json."""
+    """All fork-child rows: report.json merged with run/state/fork.json.
+
+    Children that died or were skipped before writing a report are unioned
+    in via run/state/fork.json (pre-registered rule 2: listed but excluded).
+    `_`-prefixed dirs (e.g. _validation/, _batch/) never contribute rows.
+    """
     rows = []
+    reported: set[str] = set()
     for report_path in sorted(results_root.glob("*/report.json")):
+        if report_path.parent.name.startswith("_"):
+            continue
         try:
             report = json.loads(report_path.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
@@ -70,6 +78,7 @@ def collect_children(results_root: Path) -> list[dict]:
         if "arm" not in report or "fork_key" not in report:
             continue  # not a fork child
         run_id = report["run_id"]
+        reported.add(run_id)
         fork_meta_path = results_root / run_id / "run" / "state" / "fork.json"
         meta = {}
         if fork_meta_path.exists():
@@ -91,8 +100,58 @@ def collect_children(results_root: Path) -> list[dict]:
                 report["arm"] == "kac" and meta.get("card") is None
             ),
             "steer_accepted": meta.get("steer_accepted"),
+            "validation_calls": report.get("validation_calls"),
+            "duration_seconds": report.get("duration_seconds"),
+        })
+    # Union in fork.json rows lacking report.json (skipped / killed children).
+    for meta_path in sorted(results_root.glob("*/run/state/fork.json")):
+        run_dir = meta_path.parents[2]
+        if run_dir.name.startswith("_") or run_dir.name in reported:
+            continue
+        try:
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+        if "arm" not in meta or "key" not in meta:
+            continue
+        rows.append({
+            "run_id": meta.get("run_id", run_dir.name),
+            "task": None,
+            "arm": meta["arm"],
+            "fork_key": meta["key"],
+            "donor_run_id": meta.get("donor_run_id"),
+            "reason": "no_report",
+            "final_pass": False,
+            "fork_mode": meta.get("fork_mode", "unknown"),
+            "skipped": meta.get("skipped", "died or killed before report"),
+            "no_card": meta["arm"] == "kac" and meta.get("card") is None,
+            "steer_accepted": meta.get("steer_accepted"),
+            "validation_calls": None,
+            "duration_seconds": None,
         })
     return rows
+
+
+def child_validation_stats(run_dir: Path) -> dict:
+    """Parse kvc_validation frames from a child's event stream."""
+    stats: dict = {"n_validations": 0, "first_epoch": None,
+                   "first_result": None, "first_mono": None}
+    events_path = run_dir / "run" / "events" / "events.jsonl"
+    if not events_path.exists():
+        return stats
+    for line in events_path.read_text(encoding="utf-8").splitlines():
+        try:
+            frame = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if frame.get("type") != "kvc_validation":
+            continue
+        stats["n_validations"] += 1
+        if stats["first_epoch"] is None:
+            stats["first_epoch"] = frame.get("epoch")
+            stats["first_result"] = frame.get("result")
+            stats["first_mono"] = frame.get("_mono")
+    return stats
 
 
 def collect_specs(results_root: Path) -> dict[tuple[str, str], dict]:
@@ -272,30 +331,71 @@ def donor_level_hl(rows: list[dict]) -> dict:
     }
 
 
-def t2_fidelity(rows: list[dict]) -> dict:
-    """Replay-fidelity calibration: none-arm children of T2 blocks restart
-    from a tree that ALREADY passed validation, so they should pass again.
-    ≤half passing is a replay-fidelity alarm qualifying all other results."""
+def validation_reproduction_fidelity(rows: list[dict]) -> dict:
+    """Deterministic replay-fidelity calibration for T2 blocks.
+
+    T2 fires on a FAILED validation (gps.py: "current-epoch validation
+    failed"; T3 is the post-pass trigger), so none-arm children of T2
+    blocks restart from trees that FAILED at freeze time. A none child
+    whose FIRST validation happens on the unchanged tree (epoch 0, i.e.
+    before any mutation) must reproduce that fail. A pass on the unchanged
+    tree means the tree, validator config, or hidden-test patch diverged
+    during replay -> replay breach: exclude that child and audit the clone.
+    Blocks where no none child ever validates on the unchanged tree are
+    reported as untested, never as alarms. (When T3 specs — true
+    already-passed trees — are collected, the same check inverts: none
+    children must re-pass; that is the originally intended probe.)
+    Pre-data fix 2026-08-31 per fork-integrity review B0; the previous
+    version assumed T2 froze passing trees and would raise false alarms."""
     none_t2 = [
         r for r in rows
         if r["analysis_arm"] == "none" and str(r.get("trigger", "")).startswith("T2")
     ]
-    passes = sum(1 for r in none_t2 if r["final_pass"])
+    reproduced = 0
+    breaches: list[dict] = []
+    tested_keys: set[tuple] = set()
+    block_keys: set[tuple] = set()
+    for r in none_t2:
+        block_keys.add(block_key(r))
+        val = r.get("val") or {}
+        if val.get("first_epoch") != 0:
+            continue  # mutated before first validation (or never validated)
+        tested_keys.add(block_key(r))
+        if val.get("first_result") == "fail":
+            reproduced += 1
+        else:
+            breaches.append({"run_id": r["run_id"],
+                             "first_result": val.get("first_result")})
     return {
-        "children": len(none_t2),
-        "passes": passes,
-        "alarm": bool(none_t2) and passes <= len(none_t2) / 2,
+        "children_t2_none": len(none_t2),
+        "unchanged_tree_tested": reproduced + len(breaches),
+        "reproduced_fail": reproduced,
+        "breaches": breaches,
+        "alarm": bool(breaches),
+        "untested_specs": sorted(
+            f"{donor}/{key}" for donor, key in block_keys - tested_keys
+        ),
     }
 
 
 def arm_summary(rows: list[dict], arm: str) -> dict:
     selected = [r for r in rows if r["analysis_arm"] == arm]
     passes = sum(1 for r in selected if r["final_pass"])
+    first_times = [r["val"]["first_mono"] for r in selected
+                   if r.get("val", {}).get("first_mono") is not None]
     return {
         "n": len(selected),
         "passes": passes,
         "rate": None if not selected else passes / len(selected),
         "wilson_95": wilson_ci(passes, len(selected)),
+        # validation-onset descriptors (oracle-gap note): let "knowledge"
+        # vs "reached-the-validator-at-all" be separated descriptively.
+        "validated_children": sum(
+            1 for r in selected if r.get("val", {}).get("n_validations")),
+        "validate_calls_total": sum(
+            r.get("validation_calls") or 0 for r in selected),
+        "first_validate_mono_median": (
+            _median(first_times) if first_times else None),
     }
 
 
@@ -311,7 +411,7 @@ def analyze_stratum(rows: list[dict], label: str) -> dict:
         "test_kac_vs_none": permutation_test(blocks),
         "hodges_lehmann": hodges_lehmann(blocks),
         "donor_level_hl": donor_level_hl(rows),
-        "t2_fidelity": t2_fidelity(rows),
+        "t2_fidelity": validation_reproduction_fidelity(rows),
         "block_diffs_by_trigger": {
             f"{donor}/{key}": {
                 "trigger": brows[0].get("trigger"),
@@ -341,7 +441,18 @@ def main() -> int:
         r["donor_tier"] = tier
         r["trigger"] = specs.get((r["donor_run_id"], r["fork_key"]), {}).get("trigger")
         r["analysis_arm"] = r["arm"]
+        r["val"] = child_validation_stats(results_root / r["run_id"])
+        # Children inherit the unsandboxed filesystem too; some navigated to
+        # the gold checkout themselves. Gate on the child's own audit as well
+        # (pre-data amendment 2026-08-31): behavioral gold contact excludes;
+        # harness-tier children stay included but flagged (sensitivity list).
+        r["own_tier"] = audit_run(results_root / r["run_id"])["tier"]
         if tier != "clean":
+            r["quarantine_reason"] = f"donor tier {tier}"
+            quarantined.append(r)
+            continue
+        if r["own_tier"] == "gold":
+            r["quarantine_reason"] = "child own tier gold (behavioral)"
             quarantined.append(r)
             continue
         if r["skipped"]:
@@ -381,7 +492,14 @@ def main() -> int:
         ],
         "listed_excluded": listed_excluded,
         "quarantined": [
-            {"run_id": r["run_id"], "donor_tier": r["donor_tier"]} for r in quarantined
+            {"run_id": r["run_id"], "donor_tier": r["donor_tier"],
+             "own_tier": r.get("own_tier"),
+             "reason": r.get("quarantine_reason")} for r in quarantined
+        ],
+        "harness_flagged_included": [
+            {"run_id": r["run_id"], "arm": r["arm"], "fork_key": r["fork_key"],
+             "final_pass": r["final_pass"]}
+            for r in included if r.get("own_tier") == "harness"
         ],
     }
     OUT_JSON.write_text(json.dumps(out, indent=2, ensure_ascii=False) + "\n",
@@ -398,13 +516,16 @@ def main() -> int:
         if not stratum["children"]:
             print("_no children_")
             continue
-        print("\n| arm | n | passes | rate | Wilson 95% |")
-        print("|---|---|---|---|---|")
+        print("\n| arm | n | passes | rate | Wilson 95% | validated | val calls | 1st val t̃ (s) |")
+        print("|---|---|---|---|---|---|---|---|")
         for arm, s in stratum["arms"].items():
             ci = "n/a" if s["wilson_95"] is None else (
                 f"[{s['wilson_95'][0]:.2f}, {s['wilson_95'][1]:.2f}]")
             rate = "n/a" if s["rate"] is None else f"{s['rate']:.2f}"
-            print(f"| {arm} | {s['n']} | {s['passes']} | {rate} | {ci} |")
+            ft = ("n/a" if s["first_validate_mono_median"] is None
+                  else f"{s['first_validate_mono_median']:.0f}")
+            print(f"| {arm} | {s['n']} | {s['passes']} | {rate} | {ci} | "
+                  f"{s['validated_children']} | {s['validate_calls_total']} | {ft} |")
         test = stratum["test_kac_vs_none"]
         if "p_value" in test:
             verdict = "" if test["can_reject_alpha_05"] else (
@@ -429,10 +550,16 @@ def main() -> int:
                 print(f"LODO: { {k: (None if v is None else round(v, 2)) for k, v in dhl['leave_one_donor_out'].items()} } "
                       f"(sign-stable: {dhl['lodo_sign_stable']})")
             fid = stratum["t2_fidelity"]
-            if fid["children"]:
-                flag = " — REPLAY-FIDELITY ALARM" if fid["alarm"] else ""
-                print(f"T2 fidelity (none-arm revalidating an already-passing "
-                      f"tree): {fid['passes']}/{fid['children']} pass{flag}")
+            if fid["children_t2_none"]:
+                flag = (" — REPLAY BREACH: exclude breached children, audit "
+                        "clone" if fid["alarm"] else "")
+                print(f"T2 reproduction fidelity (none-arm first validation on "
+                      f"UNCHANGED tree must reproduce the donor's FAIL): "
+                      f"{fid['reproduced_fail']}/{fid['unchanged_tree_tested']} "
+                      f"reproduced{flag}")
+                if fid["untested_specs"]:
+                    print(f"T2 specs untested (no none-child validated before "
+                          f"mutating): {', '.join(fid['untested_specs'])}")
             print("\nper-block outcomes (kac / none / sham):")
             for blk, vals in stratum["block_diffs_by_trigger"].items():
                 print(f"- {blk} ({vals['trigger']}): kac={vals['kac']} "
@@ -448,9 +575,15 @@ def main() -> int:
         for r in listed_excluded:
             print(f"- {r['run_id']} arm={r['arm']}: {r['exclusion']}")
     if quarantined:
-        print("\n## quarantined (donor not clean-tier)")
+        print("\n## quarantined (donor not clean-tier / child own gold)")
         for r in out["quarantined"]:
-            print(f"- {r['run_id']} donor_tier={r['donor_tier']}")
+            print(f"- {r['run_id']} — {r['reason']}")
+    if out["harness_flagged_included"]:
+        print("\n## harness-flagged but included (child own tier=harness; "
+              "sensitivity: re-check primary contrast without these)")
+        for r in out["harness_flagged_included"]:
+            print(f"- {r['run_id']} arm={r['arm']} key={r['fork_key']} "
+                  f"pass={r['final_pass']}")
     print(f"\nJSON: {OUT_JSON}")
     return 0
 

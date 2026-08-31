@@ -30,6 +30,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from kvc.harness.audit_leaks import audit_run
 from kvc.harness.pi_bridge import KVC_ROOT, list_tasks
 from kvc.harness.providers import KEY_ENV_NAME
 
@@ -247,17 +248,54 @@ def build_jobs(args: argparse.Namespace) -> list[Job]:
     if args.fork_specs:
         # Trigger-time forks: every fork-spec.json under the given root spawns
         # one child per arm per replicate. Kind "fork" shares the actor slot.
-        specs = sorted(Path(args.fork_specs).rglob("fork-spec.json"))
+        #
+        # Spawn gate (fork-integrity review A1/A2/A4, 2026-08-31):
+        #  - specs under any `_`-prefixed component (e.g. _quarantine) or
+        #    below a QUARANTINE.txt are never spawned;
+        #  - identity bind: the spec must sit at
+        #    <root>/<donor_run_id>/forks/<key-dir>/fork-spec.json, so a
+        #    re-copied quarantined spec inside the root cannot spawn;
+        #  - donor dir must exist and audit tier must be clean at spawn time;
+        #  - idempotence: a child whose report.json already exists is skipped
+        #    unless --force-fork (finished children are never re-sampled;
+        #    run_fork_child would otherwise rmtree and delete them).
+        scan_root = Path(args.fork_specs).resolve()
+        specs = sorted(scan_root.rglob("fork-spec.json"))
         arms = [a.strip() for a in args.fork_arms.split(",") if a.strip()]
+        tier_cache: dict[str, str] = {}
         for spec_path in specs:
+            if any(part.startswith("_") for part in spec_path.parts):
+                continue
+            if any((d / "QUARANTINE.txt").exists() for d in spec_path.parents):
+                continue
             try:
                 spec = json.loads(spec_path.read_text(encoding="utf-8"))
             except Exception:
+                continue
+            if (spec_path.parent.parent.name != "forks"
+                    or spec_path.parent.parent.parent.name != spec.get("donor_run_id")):
+                print(f"skip spec (identity bind failed): {spec_path}",
+                      file=sys.stderr)
+                continue
+            donor_id = spec["donor_run_id"]
+            if donor_id not in tier_cache:
+                donor_base = scan_root / donor_id
+                tier_cache[donor_id] = (
+                    "missing" if not donor_base.exists()
+                    else audit_run(donor_base)["tier"]
+                )
+            if tier_cache[donor_id] != "clean":
+                print(f"skip spec (donor tier={tier_cache[donor_id]}): "
+                      f"{spec_path}", file=sys.stderr)
                 continue
             safe_key = spec["key"].replace("@", "-").replace("/", "-")
             for arm in arms:
                 for i in range(1, args.fork_children + 1):
                     run_id = f"{spec['donor_run_id']}-fork-{safe_key}-{arm}-c{i}"
+                    if (not args.force_fork
+                            and (RESULTS_ROOT / run_id / "report.json").exists()):
+                        print(f"skip (report exists): {run_id}", file=sys.stderr)
+                        continue
                     jobs.append(
                         Job(
                             kind="fork",
@@ -352,6 +390,8 @@ def main() -> int:
     parser.add_argument("--fork-specs", default=None, help="root dir scanned for fork-spec.json (trigger-time fork children)")
     parser.add_argument("--fork-arms", default="none,sham,kac", help="comma-separated fork arms")
     parser.add_argument("--fork-children", type=int, default=2, help="children per spec per arm")
+    parser.add_argument("--force-fork", action="store_true",
+                        help="respawn fork children even when report.json exists (DESTRUCTIVE: deletes finished children)")
     parser.add_argument("--reps", type=int, default=1)
     parser.add_argument("--budget", type=float, default=420.0)
     parser.add_argument("--batch-id", default=None)
