@@ -35,8 +35,9 @@ tasks — dangling references would be non-actionable oracle structure).
 ## Execution
 
 2 tasks × {kac, hint} × 2 replicates = 8 new runs; baseline = Round-2 clean
-native runs (thinking-toggle r3; post-tool-compaction r2, r3 — audit tiers
-re-verified 2026-08-31). run_batch `--kac/--hint`.
+native runs (audit tiers re-verified 2026-08-31): thinking-toggle r2, r3
+(0/2 pass; r1 excluded harness-tier); post-tool-compaction r1, r2, r3
+(0/3 pass, all clean). run_batch `--kac/--hint`.
 
 ## Analysis (frozen)
 

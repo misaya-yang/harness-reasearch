@@ -126,6 +126,40 @@ def read_events(run_dir: Path) -> list[dict[str, Any]]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
 
 
+def last_assistant_text(run_dir: Path) -> str:
+    """Authoritative fallback for probe output extraction.
+
+    RPC get_messages was observed (2026-08-31, fork-child card probes and KAA
+    D probes) to return no assistant content after settle even when the
+    transcript plainly contained the answer. The runner's own agent_end frame
+    carries the full message list, so it is the reliable source of record.
+    """
+    text = ""
+    events_path = run_dir / "events" / "events.jsonl"
+    if not events_path.exists():
+        return ""
+    for line in events_path.read_text(encoding="utf-8").splitlines():
+        try:
+            frame = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if frame.get("type") != "agent_end":
+            continue
+        for message in frame.get("messages", []):
+            if message.get("role") != "assistant":
+                continue
+            content = message.get("content", [])
+            if isinstance(content, list):
+                candidate = "".join(
+                    part.get("text", "") for part in content if isinstance(part, dict)
+                )
+            else:
+                candidate = str(content)
+            if candidate.strip():
+                text = candidate
+    return text
+
+
 def build_child_env(
     config: RunConfig, fake_home: Path, tmpdir: Path | None = None
 ) -> dict[str, str]:

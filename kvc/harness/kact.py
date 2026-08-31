@@ -22,7 +22,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from kvc.harness.kvc_run import KvcRunner, RunConfig, _fired_key
+from kvc.harness.kvc_run import KvcRunner, RunConfig, _fired_key, last_assistant_text
 
 PROBE_BUDGET_SECONDS = 120.0
 SOURCES_BUDGET_BYTES = 96 * 1024
@@ -353,6 +353,10 @@ def run_probe(
             text = str(content)
         if text.strip():
             assistant_text = text
+    if not assistant_text.strip():
+        # RPC get_messages can come back empty after settle; the agent_end
+        # frame in the event log carries the full transcript (see kvc_run).
+        assistant_text = last_assistant_text(probe_dir / "run")
     (probe_dir / "probe-output.txt").write_text(assistant_text, encoding="utf-8")
     card = parse_card(assistant_text)
     report = {

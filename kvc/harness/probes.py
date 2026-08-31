@@ -40,7 +40,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from kvc.harness.kvc_run import KvcRunner, RunConfig
+from kvc.harness.kvc_run import KvcRunner, RunConfig, last_assistant_text
 
 # 2026-08-31 amendment (R4): first D probes on the large-file tasks produced
 # zero assistant text in 120s (budget exhausted mid-read). Raised to 240s for
@@ -311,6 +311,10 @@ def _run_headless_probe(
             candidate = str(content)
         if candidate.strip():
             text = candidate
+    if not text.strip():
+        # RPC get_messages can come back empty after settle; the agent_end
+        # frame in the event log carries the full transcript (see kvc_run).
+        text = last_assistant_text(probe_dir / "run")
     (probe_dir / "probe-output.txt").write_text(text, encoding="utf-8")
     return {"reason": outcome.reason, "output": text}
 
