@@ -7,13 +7,13 @@
     "pi-find-root-relativization-donor-r2-20260831-133534": "harness"
   },
   "counts": {
-    "children_total": 28,
+    "children_total": 30,
     "included": 20,
     "replay": 15,
     "reconstruction": 5,
     "kac_nocard": 1,
     "listed_excluded": 0,
-    "quarantined_donor": 7
+    "quarantined_donor": 9
   },
   "strata": {
     "replay_primary": {
@@ -283,6 +283,18 @@
       "donor_tier": "clean",
       "own_tier": "gold",
       "reason": "child own tier gold (behavioral)"
+    },
+    {
+      "run_id": "pi-find-root-relativization-donor-r2-20260831-133534-fork-T2-epoch6-kac-c1",
+      "donor_tier": "harness",
+      "own_tier": "harness",
+      "reason": "donor tier harness"
+    },
+    {
+      "run_id": "pi-find-root-relativization-donor-r2-20260831-133534-fork-T2-epoch6-kac-c2",
+      "donor_tier": "harness",
+      "own_tier": "gold",
+      "reason": "donor tier harness"
     },
     {
       "run_id": "pi-find-root-relativization-donor-r2-20260831-133534-fork-T2-epoch6-none-c1",

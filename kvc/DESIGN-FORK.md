@@ -56,6 +56,31 @@ results/_quarantine/ (outside the root), partial child deleted (no report).
 Quarantine rule now: move specs OUTSIDE results/kvc entirely; fork_stats
 additionally quarantines by donor audit tier as defense in depth.
 
+AMENDMENT 2026-08-31 (integrity hardening, all pre-data w.r.t. child
+outcomes; details in kvc/analysis/notes/fork-integrity-review.md):
+(a) t2_fidelity premise corrected — T2 fires on validation FAIL (gps.py),
+not pass; replaced by validation_reproduction_fidelity: a none child whose
+first validation happens on the unchanged tree (epoch 0) must reproduce the
+donor's FAIL; a pass there = replay breach (exclude + audit); specs with no
+such child are "untested", never alarms. (b) audit_leaks hardened: scans
+tool_execution_end result blobs too; self-attribution is a component-
+boundary path-prefix match (child ids embed donor ids — the old substring
+skip leaked sibling paths); result-phase-only gold hits earn harness tier
+(passive PATH/env printout of the agent-dir/bin symlink), args-phase gold
+hits earn gold. (c) fork_stats gates each child on its OWN audit tier:
+gold excludes, harness stays included but flagged (sensitivity list).
+(d) run_batch spawn gate: `_`-prefix/QUARANTINE.txt exclusion, identity
+bind (<root>/<donor>/forks/<key>/fork-spec.json), donor tier re-checked at
+spawn, idempotence skip when a child report.json exists (--force-fork to
+override). (e) quarantined specs' snapshot/session paths nulled in place.
+Consequence for material: donor r2-133534 (block b3, T2@epoch6) is
+harness-tier (read its own validator task.json) → block quarantined; the
+replay primary now has 3 blocks / 2 informative, p_min floor 0.5.
+Known residual leak: agent-dir/bin symlinks into the pi checkout's
+node_modules/.bin, so PATH dumps disclose the gold location; 3 none-arm
+children followed it. Fix (scrub agent-dir/bin) is scheduled for the next
+donor batch, not this round (would change the frozen spawn conditions).
+
 AMENDMENT 2026-08-31 (post-smoke): replay mechanism validated live on a
 clean batch-2 spec — the forked session carried the donor transcript
 byte-identical (only session id / cwd / parentSession / timestamp rewritten),
