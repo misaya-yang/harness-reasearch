@@ -107,6 +107,15 @@ def collect_probe_inputs(runner: KvcRunner, task: dict[str, Any]) -> dict[str, A
                 continue
             if frame.get("type") == "kvc_validation" and frame.get("counterexample"):
                 counterexamples.append(str(frame["counterexample"]))
+    # Fallback when nothing was changed or read yet: give the probe the repo
+    # file index so it can localize without any tool access of its own.
+    if not candidates:
+        index = _git(workspace, "ls-files")
+        lines = index.splitlines()
+        if len(lines) > 400:
+            lines = lines[:400] + [f"...[{len(lines) - 400} more files]"]
+        sources_parts.append("\n## repository file index (base tree)\n\n" + "\n".join(lines) + "\n")
+
     observations = ["Test commands the solution must satisfy:"]
     observations.extend(f"  - {command}" for command in task.get("test_commands", []))
     if counterexamples:
@@ -277,7 +286,10 @@ class KacController:
             run_dir=probe_dir / "run",
             task_prompt=prompt,
             objective_anchor=f"KAC checkpoint probe {key}",
-            tools=("read",),
+            # No tools: the probe's evidence is complete in the prompt. With a
+            # tool surface the model explores the empty probe workspace until
+            # budget instead of answering (round-1 r1: 191 events, 0 output).
+            tools=(),
             extensions=(),
             budget_seconds=PROBE_BUDGET_SECONDS,
             validator_command=None,

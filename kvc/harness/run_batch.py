@@ -140,56 +140,57 @@ def build_jobs(args: argparse.Namespace) -> list[Job]:
                     rss_estimate_mb=CAL_RSS_ESTIMATE_MB,
                 )
             )
+    stamp = time.strftime("%Y%m%d-%H%M%S", time.gmtime())
     if args.native:
-        stamp = time.strftime("%Y%m%d-%H%M%S", time.gmtime())
-        for i in range(1, args.reps + 1):
-            run_id = f"{args.native}-native-r{i}-{stamp}"
-            jobs.append(
-                Job(
-                    kind="native",
-                    name=f"native:{run_id}",
-                    argv=[
-                        sys.executable,
-                        "-m",
-                        "kvc.harness.run_native",
-                        "--task",
-                        args.native,
-                        "--suite",
-                        args.suite,
-                        "--run-id",
-                        run_id,
-                        "--budget",
-                        str(args.budget),
-                    ],
-                    watchdog_seconds=NATIVE_WATCHDOG_SECONDS,
-                    rss_estimate_mb=NATIVE_RSS_ESTIMATE_MB,
+        for task_id in [t.strip() for t in args.native.split(",") if t.strip()]:
+            for i in range(1, args.reps + 1):
+                run_id = f"{task_id}-native-r{i}-{stamp}"
+                jobs.append(
+                    Job(
+                        kind="native",
+                        name=f"native:{run_id}",
+                        argv=[
+                            sys.executable,
+                            "-m",
+                            "kvc.harness.run_native",
+                            "--task",
+                            task_id,
+                            "--suite",
+                            args.suite,
+                            "--run-id",
+                            run_id,
+                            "--budget",
+                            str(args.budget),
+                        ],
+                        watchdog_seconds=NATIVE_WATCHDOG_SECONDS,
+                        rss_estimate_mb=NATIVE_RSS_ESTIMATE_MB,
+                    )
                 )
-            )
     if args.kac:
-        stamp = time.strftime("%Y%m%d-%H%M%S", time.gmtime())
-        for i in range(1, args.reps + 1):
-            run_id = f"{args.kac}-kac-r{i}-{stamp}"
-            jobs.append(
-                Job(
-                    kind="kac",
-                    name=f"kac:{run_id}",
-                    argv=[
-                        sys.executable,
-                        "-m",
-                        "kvc.harness.run_kac",
-                        "--task",
-                        args.kac,
-                        "--suite",
-                        args.suite,
-                        "--run-id",
-                        run_id,
-                        "--budget",
-                        str(args.budget),
-                    ],
-                    watchdog_seconds=NATIVE_WATCHDOG_SECONDS,
-                    rss_estimate_mb=KAC_RSS_ESTIMATE_MB,
+        for task_id in [t.strip() for t in args.kac.split(",") if t.strip()]:
+            for i in range(1, args.reps + 1):
+                run_id = f"{task_id}-kac-r{i}-{stamp}"
+                jobs.append(
+                    Job(
+                        kind="kac",
+                        name=f"kac:{run_id}",
+                        argv=[
+                            sys.executable,
+                            "-m",
+                            "kvc.harness.run_kac",
+                            "--task",
+                            task_id,
+                            "--suite",
+                            args.suite,
+                            "--run-id",
+                            run_id,
+                            "--budget",
+                            str(args.budget),
+                        ],
+                        watchdog_seconds=NATIVE_WATCHDOG_SECONDS,
+                        rss_estimate_mb=KAC_RSS_ESTIMATE_MB,
+                    )
                 )
-            )
     return jobs
 
 
@@ -252,8 +253,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--suite", default="v3")
     parser.add_argument("--calibrate-uncalibrated", action="store_true")
-    parser.add_argument("--native", default=None, help="task id to run native replicates of")
-    parser.add_argument("--kac", default=None, help="task id to run KAC-arm replicates of")
+    parser.add_argument("--native", default=None, help="comma-separated task ids for native replicates")
+    parser.add_argument("--kac", default=None, help="comma-separated task ids for KAC-arm replicates")
     parser.add_argument("--reps", type=int, default=1)
     parser.add_argument("--budget", type=float, default=420.0)
     parser.add_argument("--batch-id", default=None)

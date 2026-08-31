@@ -1,0 +1,48 @@
+# Round 1 — KAC first live (pi-retry-attempt-timeout, n=3)
+
+Batch `round1-kac-cal` (stamp 20260831-114543), budget 420s, qwen3.8-flash thinking-off.
+
+## Results
+
+| run | reason | epochs | validations | triggers | cards_injected | cards_accepted |
+|---|---|---|---|---|---|---|
+| kac-r1 | settled | 24 | 3 | T2@epoch0 | 0 | 0 |
+| kac-r2 | budget | 3 | 0 | — | 0 | 0 |
+| kac-r3 | budget | 0 | 0 | T1 | 0 | 0 |
+
+All three leak-audit **clean**; all three manifests free of pi_repo.
+
+## Primary finding: the probe produced zero output
+
+The single fired probe (kac-r1, T2@epoch0) ran its full 120s budget and returned
+**0 output chars / card_parsed=False**. Its event log shows the cause: with a
+`read` tool and an (intentionally empty) probe workspace, the model looped
+issuing `read` calls against nonexistent paths (`ENOENT .../workspace/README.md`)
+until budget, never emitting the decision card.
+
+Secondary: the probe context itself was near-empty — at epoch0 there is no diff
+and no changed/read files yet, so `{diff}=(no changes yet)` and
+`{sources}=(no source collected)`. Even a well-behaved probe would have had
+little to work with.
+
+## Fixes applied (for Round 1 re-run)
+
+1. **Probe tool surface → none.** `tools=()` in `kact._run_probe`. The probe's
+   evidence is complete in the prompt; any tool invites workspace exploration
+   that burns the budget. (pi CLI `--tools ""` filters to an empty allowlist,
+   verified in `args.ts`.)
+2. **Repo file-index fallback** in `collect_probe_inputs`: when nothing has been
+   changed or read yet, embed `git ls-files` (capped 400 lines) so the probe can
+   localize the edit surface from structure alone.
+
+## Control-arm context (clean native baseline, n=5)
+
+4/5 final workspaces pass the frozen verifier; Control Loss small on the passing
+runs (6.3s and 21.5s after first passing validation). r3 (110139) remains the
+flagship: 20 epochs, passing patch at epoch 19, settled.
+
+## Next
+
+Re-run KAC n=3 with the fixed probe (Round 1b), then Round 2 native on the three
+DEV tasks (find-root-relativization, thinking-toggle-preserves-bash-output,
+post-tool-compaction-order). All v3 tasks already calibrated (base-fail/gold-pass).
