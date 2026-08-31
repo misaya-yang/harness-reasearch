@@ -42,8 +42,12 @@ from typing import Any
 
 from kvc.harness.kvc_run import KvcRunner, RunConfig
 
-D_PROBE_BUDGET_SECONDS = 120.0
-V_PROBE_BUDGET_SECONDS = 120.0
+# 2026-08-31 amendment (R4): first D probes on the large-file tasks produced
+# zero assistant text in 120s (budget exhausted mid-read). Raised to 240s for
+# D/V; the 120s value remains frozen for KAC checkpoint cards (kact.run_probe),
+# which answer from bounded inputs, not full-tree reads.
+D_PROBE_BUDGET_SECONDS = 240.0
+V_PROBE_BUDGET_SECONDS = 240.0
 I_PROBE_BUDGET_SECONDS = 300.0
 
 GOLD_EDIT_SURFACE_HINTS = {
