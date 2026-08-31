@@ -1,0 +1,20 @@
+{
+  "provider": {
+    "name": "scripted",
+    "model": "scripted-stubborn",
+    "api_key_env": "UNUSED_SCRIPTED_KEY",
+    "responses_url": "https://example.invalid/compatible-mode/v1/responses",
+    "timeout_seconds": 1,
+    "max_output_tokens": 400,
+    "temperature": 0,
+    "reasoning_effort": "none"
+  },
+  "experiment": {
+    "dataset": "datasets/contradiction_tasks_v2.jsonl",
+    "trace_path": "traces/20260830_v2_scripted_stubborn/trace.jsonl",
+    "result_path": "results/20260830_v2_scripted_stubborn/results.jsonl",
+    "conditions": ["K0", "K1", "K2", "K3", "K4", "K5"],
+    "replicates": 1,
+    "max_tasks": null
+  }
+}

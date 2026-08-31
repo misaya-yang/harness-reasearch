@@ -1,0 +1,24 @@
+model = "qwen3.8-flash"
+model_provider = "dashscope"
+model_context_window = 131072
+model_auto_compact_token_limit = 100000
+model_reasoning_effort = "none"
+approval_policy = "never"
+suppress_unstable_features_warning = true
+
+[features]
+plugins = false
+recommended_plugins = false
+remote_plugin = false
+skip_host_skill_discovery = true
+
+[model_providers.dashscope]
+name = "DashScope International"
+base_url = "https://ws-smqn3wel83c2p9wd.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1"
+env_key = "ANTHROPIC_AUTH_TOKEN"
+wire_api = "responses"
+request_max_retries = 2
+stream_max_retries = 2
+stream_idle_timeout_ms = 300000
+requires_openai_auth = false
+supports_websockets = false

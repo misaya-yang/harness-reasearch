@@ -1,0 +1,16 @@
+{
+  "provider": "alibaba-model-studio-singapore",
+  "model": "qwen3.8-flash",
+  "api_key_env": "ANTHROPIC_AUTH_TOKEN",
+  "base_url": "https://ws-smqn3wel83c2p9wd.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1",
+  "responses_url": "https://ws-smqn3wel83c2p9wd.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1/responses",
+  "timeout_seconds": 120,
+  "max_output_tokens": 800,
+  "temperature": 0,
+  "reasoning_effort": "none",
+  "notes": [
+    "The API key must be injected at runtime and must not be stored in this file.",
+    "The exact qwen3.8-flash model ID is validated only during the keyed run.",
+    "Use responses_url for raw HTTP; use base_url for an OpenAI-compatible SDK."
+  ]
+}

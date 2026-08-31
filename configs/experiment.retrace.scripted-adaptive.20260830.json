@@ -1,0 +1,20 @@
+{
+  "provider": {
+    "name": "scripted",
+    "model": "scripted-adaptive",
+    "api_key_env": "UNUSED_SCRIPTED_KEY",
+    "responses_url": "https://example.invalid/compatible-mode/v1/responses",
+    "timeout_seconds": 1,
+    "max_output_tokens": 600,
+    "temperature": 0,
+    "reasoning_effort": "none"
+  },
+  "experiment": {
+    "dataset": "datasets/retrace_tasks_v1.jsonl",
+    "trace_path": "traces/20260830_retrace_scripted_adaptive/trace.jsonl",
+    "result_path": "results/20260830_retrace_scripted_adaptive/results.jsonl",
+    "conditions": ["T0", "T1", "T2", "T3", "T4", "T5"],
+    "replicates": 1,
+    "max_tasks": null
+  }
+}

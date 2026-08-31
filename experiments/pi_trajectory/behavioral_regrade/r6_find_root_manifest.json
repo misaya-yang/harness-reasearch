@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "frozen_at_utc": "2026-08-31T00:47:45Z",
+  "status": "PRE_OUTCOME_FROZEN",
+  "task_id": "pi-find-root-relativization",
+  "source_repo": "/Users/yang/projects/opensource-harness/pi",
+  "base_commit": "25a2c8dcfec4e017720c163a6166200a9bef98ae",
+  "gold_commit": "523b5a4917ea46c20fb7b24a41311b158b7eeb05",
+  "public_prompt": "Fix Pi's find result path normalization so absolute results under POSIX and Windows drive roots keep their first path segment, directory results keep exactly one trailing slash, sibling paths with a shared prefix remain correctly relative, and already-relative custom glob results are not corrupted. Preserve existing find output limits and behavior. Dependencies are available. Inspect the repository, implement the smallest correct source fix, and run the focused native test. Do not commit changes.",
+  "tests": [
+    "find-root-posix.behavior.test.ts",
+    "find-root-windows.behavior.test.ts"
+  ],
+  "test_sha256": {
+    "find-root-posix.behavior.test.ts": "5b1583be662c8197a531ee74bb32f5a3b0a39983dbb9c9f1afb6de904988e3fd",
+    "find-root-windows.behavior.test.ts": "92c9c353bf54620bbdf579231a7a5adf4889e6f23b3b790d224547a12b8c47d7"
+  },
+  "timeout_seconds": 60,
+  "public_entrypoint": "createFindToolDefinition",
+  "forbidden_gold_shape_dependency": "relativizeFindResultPath",
+  "coverage": [
+    "POSIX root first segment",
+    "Windows drive-root first segment with backslash and forward-slash glob output",
+    "exactly one trailing slash for directory results",
+    "sibling path sharing a string prefix",
+    "already-relative custom glob result"
+  ]
+}

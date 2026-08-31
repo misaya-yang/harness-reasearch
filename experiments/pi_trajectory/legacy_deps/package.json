@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "dependencies": {
+    "glob": "13.0.6"
+  }
+}

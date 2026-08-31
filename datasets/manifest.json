@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "dataset_revision": "seed-v1",
+  "files": {
+    "seed_belief_tasks.jsonl": {
+      "task_count": 12,
+      "evaluator_truth_field": "ground_truth"
+    },
+    "long_horizon_tasks.jsonl": {
+      "task_count": 6,
+      "evaluator_truth_field": "ground_truth"
+    }
+  },
+  "freeze_policy": "Do not edit a dataset after a keyed run; make a new revision and record its digest.",
+  "prompt_policy": "ground_truth and discriminating_evidence are evaluator metadata and are not sent to the model"
+}
+

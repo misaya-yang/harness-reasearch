@@ -1,0 +1,12 @@
+{"task_id":"rt-cache-001","base_task_id":"v2-coding-cache-001","scenario_type":"stale_irreversible"}
+{"task_id":"rt-parser-001","base_task_id":"v2-coding-parser-001","scenario_type":"postcondition_failure"}
+{"task_id":"rt-async-001","base_task_id":"v2-coding-async-001","scenario_type":"concurrent_revision"}
+{"task_id":"rt-config-001","base_task_id":"v2-coding-config-001","scenario_type":"stale_irreversible"}
+{"task_id":"rt-timeout-001","base_task_id":"v2-coding-timeout-001","scenario_type":"postcondition_failure"}
+{"task_id":"rt-replica-001","base_task_id":"v2-coding-replica-001","scenario_type":"concurrent_revision"}
+{"task_id":"rt-auth-001","base_task_id":"v2-coding-auth-001","scenario_type":"stale_irreversible"}
+{"task_id":"rt-build-001","base_task_id":"v2-coding-build-001","scenario_type":"postcondition_failure"}
+{"task_id":"rt-billing-001","base_task_id":"v2-work-billing-001","scenario_type":"concurrent_revision"}
+{"task_id":"rt-calendar-001","base_task_id":"v2-work-calendar-001","scenario_type":"stale_irreversible"}
+{"task_id":"rt-policy-001","base_task_id":"v2-work-policy-001","scenario_type":"postcondition_failure"}
+{"task_id":"rt-ticket-001","base_task_id":"v2-work-ticket-001","scenario_type":"concurrent_revision"}

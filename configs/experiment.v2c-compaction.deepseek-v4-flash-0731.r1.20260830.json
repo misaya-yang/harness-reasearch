@@ -1,0 +1,20 @@
+{
+  "provider": {
+    "name": "alibaba-model-studio-singapore",
+    "model": "deepseek-v4-flash-0731",
+    "api_key_env": "ANTHROPIC_AUTH_TOKEN",
+    "responses_url": "https://ws-smqn3wel83c2p9wd.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1/responses",
+    "timeout_seconds": 120,
+    "max_output_tokens": 500,
+    "temperature": 0,
+    "reasoning_effort": "none"
+  },
+  "experiment": {
+    "dataset": "datasets/contradiction_tasks_v2.jsonl",
+    "trace_path": "traces/20260830_v2c_compaction_deepseekv4flash0731_r1/trace.jsonl",
+    "result_path": "results/20260830_v2c_compaction_deepseekv4flash0731_r1/results.jsonl",
+    "conditions": ["S0", "S1", "S2", "S3"],
+    "replicates": 1,
+    "max_tasks": null
+  }
+}

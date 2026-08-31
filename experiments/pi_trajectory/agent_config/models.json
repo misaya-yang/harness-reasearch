@@ -1,0 +1,25 @@
+{
+  "providers": {
+    "dashscope-intl": {
+      "baseUrl": "https://ws-smqn3wel83c2p9wd.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1",
+      "api": "openai-responses",
+      "apiKey": "$ANTHROPIC_AUTH_TOKEN",
+      "models": [
+        {
+          "id": "qwen3.8-flash",
+          "name": "Qwen 3.8 Flash",
+          "reasoning": false,
+          "input": ["text"],
+          "contextWindow": 131072,
+          "maxTokens": 16384,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          }
+        }
+      ]
+    }
+  }
+}

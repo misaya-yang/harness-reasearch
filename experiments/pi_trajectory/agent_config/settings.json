@@ -1,0 +1,26 @@
+{
+  "defaultProvider": "dashscope-intl",
+  "defaultModel": "qwen3.8-flash",
+  "defaultThinkingLevel": "off",
+  "defaultProjectTrust": "always",
+  "enableInstallTelemetry": false,
+  "enableAnalytics": false,
+  "quietStartup": true,
+  "compaction": {
+    "enabled": true,
+    "reserveTokens": 16384,
+    "keepRecentTokens": 20000
+  },
+  "retry": {
+    "enabled": true,
+    "maxRetries": 2,
+    "baseDelayMs": 1000,
+    "provider": {
+      "timeoutMs": 300000,
+      "maxRetries": 2,
+      "maxRetryDelayMs": 30000
+    }
+  },
+  "httpIdleTimeoutMs": 300000,
+  "transport": "sse"
+}

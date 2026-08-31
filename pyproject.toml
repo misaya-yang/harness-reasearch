@@ -1,0 +1,18 @@
+[project]
+name = "research-self-correction"
+version = "0.1.0"
+description = "Reproducible experiments on self-correction, provenance, and belief preservation in agent harnesses"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[dependency-groups]
+dev = []
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+

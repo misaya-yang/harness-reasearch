@@ -1,0 +1,27 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+.venv/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+**/node_modules/
+**/cargo_targets/
+**/target/
+
+# Local experiment checkouts, generated evidence, and reports are not source code.
+experiments/**/workspaces/
+experiments/native_trajectory/calibration/
+results/
+traces/
+reports/
+repo_audit/
+
+# Local handoffs are operational state, not distributable source.
+HANDOFF_TO_*.md
+QWEN38_FLASH_NEXT_PROMPT.md
+
+*.key
+*.pem

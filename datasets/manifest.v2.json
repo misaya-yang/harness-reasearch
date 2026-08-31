@@ -1,0 +1,18 @@
+{
+  "schema_version": 2,
+  "dataset_revision": "contradiction-v2-20260830",
+  "files": {
+    "contradiction_tasks_v2.jsonl": {
+      "task_count": 20,
+      "domains": {
+        "coding": 8,
+        "work_tool_use": 8,
+        "research_compaction": 4
+      },
+      "evaluator_truth_field": "correct_choice",
+      "evidence_contract": "path-independent Boolean predicates over evidence atoms"
+    }
+  },
+  "prompt_policy": "evaluator truth, sufficiency predicates, and action risk labels are never model-visible",
+  "freeze_policy": "do not edit this dataset after the 2026-08-30 keyed runs; create a new revision"
+}

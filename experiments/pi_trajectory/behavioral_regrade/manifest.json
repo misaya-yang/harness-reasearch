@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "source_repo": "/Users/yang/projects/opensource-harness/pi",
+  "tasks": {
+    "pi-thinking-toggle-preserves-bash-output": {
+      "base_commit": "6c4f360264397c59801f6da2bdac13e3b1fcbe91",
+      "gold_commit": "b07e17fa",
+      "tests": ["thinking-toggle.behavior.test.ts"],
+      "test_sha256": {
+        "thinking-toggle.behavior.test.ts": "be6bdf5a84f5b5693f8b3f5a45e141251b6c18e6fb3ac0fb53bfbfce6bab8dd6"
+      },
+      "timeout_seconds": 60
+    },
+    "pi-reject-truncated-compaction-summary": {
+      "base_commit": "bfb004d4418ff05c6f909eaaab856cbe75c1fde0",
+      "gold_commit": "97fa14e3",
+      "tests": [
+        "compaction-length.behavior.test.ts",
+        "compaction-persistence.behavior.test.ts"
+      ],
+      "test_sha256": {
+        "compaction-length.behavior.test.ts": "dc8796d90ff79ca8adcaec7cddb8f22119f96e9a8fe21dd13036d5fa31aeafc7",
+        "compaction-persistence.behavior.test.ts": "c2a8b1dee5ffb6aea06a89c3e2ce6498a533df88b9ac2922fcd81021e2c2b6cb"
+      },
+      "timeout_seconds": 60
+    },
+    "pi-retry-attempt-timeout": {
+      "base_commit": "080932e53cb6f82076b111efc424845e4d5c1902",
+      "gold_commit": "df018b60",
+      "tests": ["retry-attempt-timeout.behavior.test.ts"],
+      "test_sha256": {
+        "retry-attempt-timeout.behavior.test.ts": "fdfc8139a4a52ea67a17443ca63f0f44b0e5d50a65aa7549184948d71ec5e6d5"
+      },
+      "timeout_seconds": 60
+    }
+  },
+  "rows": [
+    {
+      "round": 4,
+      "task_id": "pi-thinking-toggle-preserves-bash-output",
+      "condition": "N",
+      "patch": "results/20260830_pi_ctr_round4_v1/batch/pi-thinking-toggle-preserves-bash-output__N__r1/evaluation/agent.patch",
+      "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "round": 4,
+      "task_id": "pi-thinking-toggle-preserves-bash-output",
+      "condition": "P",
+      "patch": "results/20260830_pi_ctr_round4_v1/batch/pi-thinking-toggle-preserves-bash-output__P__r1/evaluation/agent.patch",
+      "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "round": 4,
+      "task_id": "pi-reject-truncated-compaction-summary",
+      "condition": "P",
+      "patch": "results/20260830_pi_ctr_round4_v1/batch/pi-reject-truncated-compaction-summary__P__r1/evaluation/agent.patch",
+      "patch_sha256": "fc23960979298ae0af37c857e72c344ea902ee9b2227892e8a45399e886218bc"
+    },
+    {
+      "round": 4,
+      "task_id": "pi-reject-truncated-compaction-summary",
+      "condition": "N",
+      "patch": "results/20260830_pi_ctr_round4_v1/batch/pi-reject-truncated-compaction-summary__N__r1/evaluation/agent.patch",
+      "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "round": 4,
+      "task_id": "pi-retry-attempt-timeout",
+      "condition": "N",
+      "patch": "results/20260830_pi_ctr_round4_v1/batch/pi-retry-attempt-timeout__N__r1/evaluation/agent.patch",
+      "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "round": 4,
+      "task_id": "pi-retry-attempt-timeout",
+      "condition": "P",
+      "patch": "results/20260830_pi_ctr_round4_v1/batch/pi-retry-attempt-timeout__P__r1/evaluation/agent.patch",
+      "patch_sha256": "5dee358a699dc8673d0ce37b20bc3be914f019258e8962862ca43424dd307b5f"
+    },
+    {
+      "round": 5,
+      "task_id": "pi-thinking-toggle-preserves-bash-output",
+      "condition": "P",
+      "patch": "results/20260830_pi_ctr_round5_v1/batch/pi-thinking-toggle-preserves-bash-output__P__r1/evaluation/agent.patch",
+      "patch_sha256": "0074d83ee756a628ee8670a4aefbd369e34a5928c105e041c4ad771fc389da0b"
+    },
+    {
+      "round": 5,
+      "task_id": "pi-thinking-toggle-preserves-bash-output",
+      "condition": "N",
+      "patch": "results/20260830_pi_ctr_round5_v1/batch/pi-thinking-toggle-preserves-bash-output__N__r1/evaluation/agent.patch",
+      "patch_sha256": "df3da8664c77d6f28a2de93078f471aac1aebb41e9bcdbb98e7961e33a2ab09f"
+    },
+    {
+      "round": 5,
+      "task_id": "pi-reject-truncated-compaction-summary",
+      "condition": "N",
+      "patch": "results/20260830_pi_ctr_round5_v1/batch/pi-reject-truncated-compaction-summary__N__r1/evaluation/agent.patch",
+      "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "round": 5,
+      "task_id": "pi-reject-truncated-compaction-summary",
+      "condition": "P",
+      "patch": "results/20260830_pi_ctr_round5_v1/batch/pi-reject-truncated-compaction-summary__P__r1/evaluation/agent.patch",
+      "patch_sha256": "12798b0aabf9af0b33e166bd58bbbe708daa1548abee8a7531d3f43e08fc958c"
+    },
+    {
+      "round": 5,
+      "task_id": "pi-retry-attempt-timeout",
+      "condition": "P",
+      "patch": "results/20260830_pi_ctr_round5_v1/batch/pi-retry-attempt-timeout__P__r1/evaluation/agent.patch",
+      "patch_sha256": "a3d078cda7d1bb8520807eb94a54265362a5b65b3d6fe0eb484162996210ce21"
+    },
+    {
+      "round": 5,
+      "task_id": "pi-retry-attempt-timeout",
+      "condition": "N",
+      "patch": "results/20260830_pi_ctr_round5_v1/batch/pi-retry-attempt-timeout__N__r1/evaluation/agent.patch",
+      "patch_sha256": "617e5c3954addaee7bbfbfa281a8ba457ab40c624d590708ddc0c79472011fe2"
+    }
+  ]
+}

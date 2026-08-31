@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "reason": "v1 calibration-only fixture failure: getter-only InteractiveMode properties",
+  "base_manifest_sha256": "6de779afcee9908d7c4258671fdce8be9b81e4af3a5955ee650997651e7e1124",
+  "thinking_test": "thinking-toggle-v2.behavior.test.ts",
+  "thinking_test_sha256": "f13c25c8338875964861ae579d26b1ea98fc85d4e383c58ecf31cfb23f1e30d6",
+  "agent_rows_scored_before_change": 0,
+  "primary_results_changed": false
+}

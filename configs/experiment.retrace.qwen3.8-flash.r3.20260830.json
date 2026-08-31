@@ -1,0 +1,20 @@
+{
+  "provider": {
+    "name": "alibaba-model-studio-singapore",
+    "model": "qwen3.8-flash",
+    "api_key_env": "ANTHROPIC_AUTH_TOKEN",
+    "responses_url": "https://ws-smqn3wel83c2p9wd.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1/responses",
+    "timeout_seconds": 120,
+    "max_output_tokens": 600,
+    "temperature": 0,
+    "reasoning_effort": "none"
+  },
+  "experiment": {
+    "dataset": "datasets/retrace_tasks_v1.jsonl",
+    "trace_path": "traces/20260830_retrace_qwen38flash_r3/trace.jsonl",
+    "result_path": "results/20260830_retrace_qwen38flash_r3/results.jsonl",
+    "conditions": ["T0", "T1", "T2", "T3", "T4", "T5"],
+    "replicates": 3,
+    "max_tasks": null
+  }
+}
