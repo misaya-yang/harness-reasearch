@@ -5,7 +5,8 @@
 - 任务：v3 套件 10 任务（`experiments/pi_trajectory/tasks/pi_coding_tasks_v3.jsonl`），
   全部 base/gold commit 已在本机 pi 克隆验证；校准基建就绪（base/gold vitest 双跑）。
 - 已校准并有干净基线数据的任务：`pi-retry-attempt-timeout`
-  （5 次干净 native 运行，**4/5 终态通过**冻结行为验证器；旗舰 = r3-110139，
+  （5 次消毒后干净 native 运行，**3/5 = 60% 终态通过**冻结行为验证器
+  ——早期文档误写 4/5，见 `analysis/round-2.md` 更正；旗舰 = r3-110139，
   epoch 19 原生达到通过补丁）。
 - 泄漏封堵已完成：sanitized task.json + base 镜像 + 预计算 hidden-tests.patch +
   manifest 无 pi_repo + 升级审计（含邻居 run 访问检测）。每个结论只计 **clean** 层级运行。
@@ -108,3 +109,32 @@ Full-History vs Canonical-State 消融的一端。因此 Round 1/3 的 KAC vs na
 `analysis/round-4.md`）；Round 6 总结把"滞后是否显著、状态投影是否消除滞后"
 列为与 S=D∧I∧V∧T 并列的头号结论。若 Round 4 显示等效状态下分歧 <2%，
 则按外部猜想的判据"杀项目"（转向其它方向）；若分歧 15–40%，强化该框架为主叙事。
+
+---
+
+## 附录 B — 轮次重构（2026-08-31，外部批评采纳后）
+
+外部批评（已采纳）：(1) 基线是 **3/5=60%** 不是 4/5；(2) 结论降级为
+"失败不能被知识缺乏充分解释，存在独立的转移失败，观察*激励*（而非证实）
+转移控制设计"；(3) 术语用 **mutation-initiation failure**（突变启动失败，
+D→I 转移），不用 "activation gap"；(4) 按相位转移概率
+p_D·p_I·p_V·p_T 分解，实测 p_T≈1（Control Loss ≤21.5s），瓶颈在 D→I 与 I→V；
+(5) **优先级最高的新设计 = trigger-time fork**：在触发瞬间冻结检查点
+（workspace git 状态 + events 前缀 + GPS + 剩余预算），从同一状态分叉
+KAC 卡 / sham 卡 / 无干预三臂，消除"触发只落在挣扎轨迹上"的选择偏差，
+直接估 ATE_KAC|trigger。
+
+据此重构如下（Round 1/2 已按原计划完成，结论见 `analysis/round-1.md`、
+`round-2.md`）：
+
+- **R3（重构）＝ trigger-time fork 因果实验**：目标载体从旗舰任务改为
+  `pi-find-root-relativization`（中段任务：原始 1/3 settled、干净 0/3、
+  T1/T2 实际点火，且不再消耗旗舰任务的重复运行）。冻结快照后分叉
+  ≥2 子运行/臂，结局 = 是否通过冻结验证器 + 首次突变时间；
+  小样本配对检验（置换检验），事先预注册两个决策（见 `analysis/round-2.md`）。
+- **R4 ＝ KAA 探针**（原计划保留）：C0/C1/C2 上 D/V 探针分歧测量 +
+  T1 静态 know≠act 探针（在零突变运行上问"你知道该改哪里吗"）。
+- **R5（重构）＝ 突变启动救援**：在两个 0/3 任务（thinking-toggle、
+  post-tool-compaction）上测试能否用卡/提示把 D→I 抬起来——这是把
+  Round 2 的发现转化为干预实验的直接后续（替代原"消融"定位）。
+- **R6 ＝ 冻结清单 + 终报**（不变，含滞后判据与 fork ATE 两条头号结论）。

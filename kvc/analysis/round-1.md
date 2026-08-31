@@ -10,7 +10,10 @@ Batch `round1-kac-cal` (stamp 20260831-114543), budget 420s, qwen3.8-flash think
 | kac-r2 | budget | 3 | 0 | — | 0 | 0 |
 | kac-r3 | budget | 0 | 0 | T1 | 0 | 0 |
 
-All three leak-audit **clean**; all three manifests free of pi_repo.
+Manifests all free of pi_repo. Leak audit (as of writing): all three clean.
+**Later correction** under the upgraded audit (sibling-run marker):
+kac-r3-114543 is **harness tier → TAINT** (it read a sibling run's workspace;
+gold_count=0). Clean Round-1 KAC set is r1/r2-114543 only. See round-2.md.
 
 ## Primary finding: the probe produced zero output
 
@@ -37,8 +40,11 @@ little to work with.
 
 ## Control-arm context (clean native baseline, n=5)
 
-4/5 final workspaces pass the frozen verifier; Control Loss small on the passing
-runs (6.3s and 21.5s after first passing validation). r3 (110139) remains the
+**Corrected number (was "4/5" in error; the table below this in round-2.md is
+authoritative): 3/5 = 60%** of the post-sanitization clean native runs pass the
+frozen verifier (r3-110139 pass@19, r1-113034 pass@9, r3-113034 pass@13;
+r1-110139 and r2-113034 fail). Control Loss small on the passing runs
+(6.3s / 21.5s / 20.2s after first passing validation). r3 (110139) remains the
 flagship: 20 epochs, passing patch at epoch 19, settled.
 
 ## Next
